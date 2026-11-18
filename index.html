@@ -147,6 +147,7 @@ body.touch #wslots,body.touch .pcOnly{display:none!important}
 #tAuto{position:absolute;left:50%;bottom:10px;transform:translateX(-50%);font-size:11px;font-weight:900;background:#000a;border:1px solid #ffffff33;border-radius:10px;padding:5px 9px;pointer-events:auto;z-index:5}
 body.touch #mini{left:calc(8px + env(safe-area-inset-left));right:auto;bottom:auto;top:76px;width:120px;height:90px}
 body.touch #mini.big{left:50%;right:auto;top:50%;bottom:auto;transform:translate(-50%,-50%);width:min(560px,92vw);height:auto}
+@media (max-height:560px),(max-width:600px){.cprev{justify-content:center}.cprev svg{height:42vh}.actbar{position:fixed!important;left:0;right:0;bottom:0;width:auto!important;margin:0;z-index:30;background:#0b0c18f5;border-top:1px solid #ffd34d55;border-radius:0;padding:8px calc(10px + env(safe-area-inset-right)) calc(8px + env(safe-area-inset-bottom)) calc(10px + env(safe-area-inset-left));box-shadow:0 -8px 24px #000a}.card{backdrop-filter:none}.wrap{padding-bottom:96px!important}}
 @media (max-height:520px){#title .tag{display:none}#title .logo{font-size:44px}.sub{font-size:13px}.tcard{gap:8px}.card{padding:10px 14px}input.txt{padding:8px 12px;margin-top:3px}.wrap{gap:6px;padding-top:6px}.bigbtn{padding:10px 22px;min-height:46px}.btn2{min-height:40px;padding:8px 12px}.scard{min-height:76px;padding:8px}.scard .ic{font-size:26px}.sgrid{grid-template-columns:repeat(auto-fill,minmax(110px,1fr))}.portrait{width:44px;height:44px}#obj{font-size:11px;max-width:36vw;padding:4px 8px}.chip{font-size:11px;padding:3px 7px}.ib{width:36px;height:36px;font-size:15px}#bossBar{top:46px}body.touch #mini{top:60px;width:100px;height:75px}#zone .t{font-size:clamp(26px,6vw,44px)}#zone{top:9%}.cprev{min-height:0}.cprev svg{height:55vh}.crow{padding:3px 0}.sw{width:30px;height:30px}.pill{min-height:36px;padding:6px 11px;font-size:13px}.logo{margin-top:0}}
 #rotate{position:fixed;inset:0;z-index:80;background:#07070ff2;display:none;flex-direction:column;align-items:center;justify-content:center;gap:16px;text-align:center;padding:30px}
 #rotate .ph{font-size:70px;animation:rot 1.6s ease-in-out infinite}
@@ -215,7 +216,7 @@ table.lb tr.me{background:#19d3c522}
     <div><label class="lb" for="pname">Ton prénom</label><input class="txt" id="pname" maxlength="16" placeholder="Ex : Paul" autocomplete="off"></div>
     <div><label class="lb">Difficulté</label><div class="pills" id="diffP" style="margin-top:6px"><button class="pill" data-v="facile">🧟 Tranquille</button><button class="pill on" data-v="normal">💀 Normal</button><button class="pill" data-v="expert">🔥 Enragé</button></div><div class="hint" id="diffH" style="margin-top:6px"></div></div>
     <div><label class="lb">Temps pour répondre</label><div class="pills" id="timerP" style="margin-top:6px"><button class="pill" data-v="adapt">⏱️ Adapté</button><button class="pill" data-v="large">⏳ Large</button><button class="pill" data-v="off">♾️ Sans chrono</button><button class="pill" id="ttsP" style="margin-left:auto">🔊 Lecture auto</button></div><div class="hint" id="timerH" style="margin-top:6px"></div></div>
-    <div class="row"><button class="bigbtn" id="goCreate">NOUVELLE PARTIE ▶</button></div>
+    <div class="row actbar"><button class="bigbtn" id="goCreate">NOUVELLE PARTIE ▶</button></div>
     <div class="row"><button class="btn2" id="resumeBtn" style="display:none"></button><button class="btn2" id="helpBtn">❔ Comment jouer</button><button class="btn2" id="lbBtn">🏆 Scores</button></div>
   </div>
 </div></section>
@@ -223,14 +224,14 @@ table.lb tr.me{background:#19d3c522}
 <section class="screen night" id="create"><div class="wrap">
   <div class="logo sm">CRÉE TON PERSONNAGE</div>
   <div class="creator"><div class="cprev" id="cPrev"></div><div class="card copts" id="cOpts"></div></div>
-  <div class="row"><button class="btn2" id="cBack">◀ Retour</button><button class="btn2" id="cRand">🎲 Au hasard</button><button class="bigbtn" id="cGo">CHOISIR LA MATIÈRE ▶</button></div>
+  <div class="row actbar"><button class="btn2" id="cBack">◀ Retour</button><button class="btn2" id="cRand">🎲 Au hasard</button><button class="bigbtn" id="cGo">CHOISIR LA MATIÈRE ▶</button></div>
 </div></section>
 <!-- MATIÈRES -->
 <section class="screen night" id="subj"><div class="wrap">
   <div class="logo sm">CHOISIS TA MATIÈRE</div>
   <p class="tag">Touche une ou plusieurs matières, puis coche les notions à travailler. Toutes les questions viendront de ta sélection.</p>
   <div class="sgrid" id="sgrid"></div><div class="chlist" id="chlist"></div>
-  <div class="sticky row"><button class="btn2" id="backC">◀ Retour</button><span class="hint" id="qcount"></span><button class="btn2" id="revBtn">📚 Réviser sans jouer</button><button class="bigbtn" id="startBtn">ENTRER ▶</button></div>
+  <div class="sticky row actbar"><button class="btn2" id="backC">◀ Retour</button><span class="hint" id="qcount"></span><button class="btn2" id="revBtn">📚 Réviser sans jouer</button><button class="bigbtn" id="startBtn">ENTRER ▶</button></div>
 </div></section>
 <!-- CHARGEMENT -->
 <section class="screen night" id="loading"><div class="wrap"><div class="logo sm">LES MONSTRES SE RÉVEILLENT…</div><div class="lbar"><i id="lbar"></i></div><div class="hint" id="ltxt">Préparation…</div></div></section>
@@ -1877,7 +1878,7 @@ function initTitle(){$("#pname").value=S.name;document.querySelectorAll("#diffP 
  document.querySelectorAll("#timerP .pill").forEach(b=>{b.classList.toggle("on",b.dataset.v===S.timer);b.onclick=()=>{sfx.sel();S.timer=b.dataset.v;store("cz_timer",S.timer);initTitle();};});$("#timerH").textContent={adapt:"Le temps s'adapte à la longueur de la question (plus long pour lire et calculer).",large:"Beaucoup de temps pour lire et réfléchir.",off:"Pas de limite de temps : on prend le temps qu'il faut."}[S.timer];
  const tt=$("#ttsP");tt.classList.toggle("on",!!store("cz_tts"));tt.onclick=()=>{store("cz_tts",!store("cz_tts"));initTitle();};refreshTitle();}
 function needName(){const n=$("#pname").value.trim();if(!n){$("#pname").focus();$("#pname").style.borderColor="var(--red)";return false;}S.name=n;store("cz_name",n);return true;}
-$("#goCreate").onclick=()=>{ac();tryFS();if(!needName())return;sfx.sel();show("create");renderCreator();};
+$("#goCreate").onclick=()=>{ac();if(!needName())return;sfx.sel();show("create");renderCreator();};
 $("#cBack").onclick=()=>{show("title");initTitle();};
 $("#cRand").onclick=()=>{sfx.sel();COPT.forEach(([l,key,opts])=>{const o=opts[Math.random()*opts.length|0];S.look[key]=Array.isArray(o)?o[0]:o;});store("cz_look2",S.look);renderCreator();};
 $("#cGo").onclick=()=>{sfx.sel();show("subj");renderSubj();};
@@ -1889,7 +1890,7 @@ async function prepare(){show("loading");LOWQ=isTouch()&&Math.max(innerWidth,inn
 let wantFS=store("cz_fs")!==false;
 function inFS(){return !!(document.fullscreenElement||document.webkitFullscreenElement);}
 function tryFS(force){if(!(isTouch()||force)||inFS())return;if(!force&&!wantFS)return;try{const d=document.documentElement,f=d.requestFullscreen||d.webkitRequestFullscreen;if(!f)return;const r=f.call(d,{navigationUI:"hide"});const lock=()=>{try{screen.orientation&&screen.orientation.lock&&screen.orientation.lock("landscape").catch(()=>{});}catch(e){}};if(r&&r.then)r.then(lock).catch(()=>{});else lock();}catch(e){}}
-document.addEventListener("pointerdown",()=>{if(isTouch()&&wantFS&&!inFS()&&($("#game").classList.contains("active")||document.querySelector("#create.active,#subj.active,#title.active")))tryFS();},true);
+document.addEventListener("pointerdown",()=>{if(isTouch()&&wantFS&&!inFS()&&$("#game").classList.contains("active"))tryFS();},true);
 $("#startBtn").onclick=async()=>{if(!S.sel.size)return;ac();tryFS();S.mode="game";QH=null;recent=[];posBag=[];store("cz_save2",null);G=null;await prepare();startGame(freshPersist());saveGame();await showHelp();toast("🔎 Trouve des armes : une machette à la cantine, un pistolet au collège !");};
 $("#resumeBtn").onclick=async()=>{const v=store("cz_save2");if(!v)return;ac();tryFS();S.name=v.name;S.diff=v.diff;S.sel=new Set(v.sel);if(v.look)S.look=v.look;S.mode="game";QH=null;recent=[];posBag=[];G=null;await prepare();
  const p=Object.assign(freshPersist(),v.p);startGame(p);toast(`💾 Partie reprise : ${p.rescued.length}/12 camarades sauvés`);};
