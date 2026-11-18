@@ -214,6 +214,7 @@ table.lb tr.me{background:#19d3c522}
   <div class="card tcard">
     <div><label class="lb" for="pname">Ton prénom</label><input class="txt" id="pname" maxlength="16" placeholder="Ex : Paul" autocomplete="off"></div>
     <div><label class="lb">Difficulté</label><div class="pills" id="diffP" style="margin-top:6px"><button class="pill" data-v="facile">🧟 Tranquille</button><button class="pill on" data-v="normal">💀 Normal</button><button class="pill" data-v="expert">🔥 Enragé</button></div><div class="hint" id="diffH" style="margin-top:6px"></div></div>
+    <div><label class="lb">Temps pour répondre</label><div class="pills" id="timerP" style="margin-top:6px"><button class="pill" data-v="adapt">⏱️ Adapté</button><button class="pill" data-v="large">⏳ Large</button><button class="pill" data-v="off">♾️ Sans chrono</button><button class="pill" id="ttsP" style="margin-left:auto">🔊 Lecture auto</button></div><div class="hint" id="timerH" style="margin-top:6px"></div></div>
     <div class="row"><button class="bigbtn" id="goCreate">NOUVELLE PARTIE ▶</button></div>
     <div class="row"><button class="btn2" id="resumeBtn" style="display:none"></button><button class="btn2" id="helpBtn">❔ Comment jouer</button><button class="btn2" id="lbBtn">🏆 Scores</button></div>
   </div>
@@ -260,7 +261,7 @@ table.lb tr.me{background:#19d3c522}
   <div class="card" style="width:min(820px,96vw)">
     <h2 style="font-family:var(--title);font-size:24px" id="bName"></h2><div class="hint" id="bInfo"></div>
     <div class="kpis" id="bKpis"></div>
-    <h3 style="margin:10px 0 8px">📌 Mes erreurs à retravailler</h3><div id="bErrs"></div>
+    <div id="bProg"></div><h3 style="margin:10px 0 8px">📌 Mes erreurs à retravailler</h3><div id="bErrs"></div>
     <h3 style="margin:14px 0 8px">🏆 Meilleurs scores (sur cet appareil)</h3><table class="lb" id="bLb"></table>
     <div class="row noprint" style="margin-top:14px"><button class="btn2" id="printBtn">🖨️ Imprimer le bilan</button><button class="btn2" id="clearLb">Effacer les scores</button><button class="bigbtn" id="replayBtn">MENU ▶</button></div>
   </div>
@@ -273,7 +274,7 @@ table.lb tr.me{background:#19d3c522}
   <div class="qtag" id="qTag"></div><div class="qtext" id="qText"></div>
   <div class="qbarw" id="qBarW"><i id="qBar"></i></div>
   <div class="answers" id="answers"></div>
-  <div class="qfoot"><button class="btn2" id="jokerBtn">🃏 Joker 50/50 <span id="jokerN"></span></button><span class="hint">Touches 1-4 ou A-D</span><button class="btn2" id="qQuit" style="display:none">Quitter la révision</button></div>
+  <div class="qfoot"><button class="btn2" id="ttsBtn">🔊 Lire</button><button class="btn2" id="jokerBtn">🃏 Joker 50/50 <span id="jokerN"></span></button><span class="hint">Touches 1-4 ou A-D</span><button class="btn2" id="qQuit" style="display:none">Quitter la révision</button></div>
   <div class="qfb" id="qfb"></div>
 </div></div>
 <div class="ov" id="help"><div class="card ovc">
@@ -454,7 +455,8 @@ function idlePose(zb){return ground(Object.assign({},zb?POSE_Z:POSE_H));}
 
 /* ----- rasterisation en sprites ----- */
 const VB={x:-30,y:-20,w:260,h:290};
-function svgCanvas(svg,w,h){return new Promise(res=>{const img=new Image();img.onload=()=>{const c=document.createElement("canvas");c.width=Math.ceil(w);c.height=Math.ceil(h);const x=c.getContext("2d");x.drawImage(img,0,0,c.width,c.height);res(c);};img.onerror=()=>{const c=document.createElement("canvas");c.width=c.height=2;res(c);};img.src="data:image/svg+xml;charset=utf-8,"+encodeURIComponent(svg);});}
+function svgCanvas(svg,w,h){return new Promise(res=>{const img=new Image();img.onload=()=>{const c=document.createElement("canvas");c.width=Math.ceil(w);c.height=Math.ceil(h);const x=c.getContext("2d");const o=Math.max(1,c.width/170);
+  for(const[dx,dy]of[[o,0],[-o,0],[0,o],[0,-o],[o*.7,o*.7],[-o*.7,o*.7],[o*.7,-o*.7],[-o*.7,-o*.7]])x.drawImage(img,dx,dy,c.width,c.height);x.globalCompositeOperation="source-in";x.fillStyle="#07070d";x.fillRect(0,0,c.width,c.height);x.globalCompositeOperation="source-over";x.drawImage(img,0,0,c.width,c.height);res(c);};img.onerror=()=>{const c=document.createElement("canvas");c.width=c.height=2;res(c);};img.src="data:image/svg+xml;charset=utf-8,"+encodeURIComponent(svg);});}
 const SPR={};
 async function buildSprite(key,L,k,opt={}){const zb=!!L.zombie||opt.zb,R={L,zb,frames:[],poses:[],fem:!!L.fem};const jobs=[];
  const n=opt.still?0:8;
@@ -475,7 +477,7 @@ function drawArm(c,R,w,S,ua,fa){const A=R.arm[w];if(!A.ua)return;c.save();c.tran
 /* o: {x,y,s,flip,frame,arms:{mode,la,wpn,swing,t},alpha,flash,bw,kneel,rot} */
 function drawRig(c,R,o){const fr=o.kneel&&R.kneel?R.kneel:o.frame==null||!R.frames.length?R.idle:R.frames[o.frame%R.frames.length];
  const P=o.kneel&&R.kneelP?R.kneelP:o.frame==null||!R.poses.length?R.idleP:R.poses[o.frame%R.poses.length];if(!fr)return;
- c.save();c.translate(o.x,o.y);if(o.rot)c.rotate(o.rot);c.scale(o.s*o.flip*(o.bw||1),o.s);c.translate(-102,-254);if(o.alpha!=null)c.globalAlpha*=o.alpha;
+ c.save();c.translate(o.x,o.y);if(o.rot)c.rotate(o.rot);c.scale(o.s*o.flip*(o.bw||1),o.s*(o.breath!=null&&!o.kneel?1+Math.sin(o.breath*2.4)*.016:1));c.translate(-102,-254);if(o.alpha!=null)c.globalAlpha*=o.alpha;
  const am=o.arms||{mode:"down"},SF=shoulder(R,P,"F"),SB=shoulder(R,P,"B");let aF,aB,wp=null;
  const dir={x:Math.cos(am.la||0),y:Math.sin(am.la||0)};
  if(am.mode==="aim"){const w=WGRIP[am.wpn]||WGRIP.pistol,la=(am.la||0)+(am.swing||0),d={x:Math.cos(la),y:Math.sin(la)},C={x:118+(P.dx||0),y:104+(P.dy||0)};
@@ -653,6 +655,10 @@ function drawStatic(c){
  c.fillStyle="rgba(0,0,0,.35)";for(const s of SOL){if(s.k==="obj"||s.k==="car"||s.k==="boiler"||s.k==="shelf")c.fillRect(s.x+6,s.y+8,s.w,s.h);}
  for(const s of SOL)if(s.d!=="wall"&&s.d!=="lampbase")drawSolid(c,s);
  for(const s of SOL)if(s.d==="wall")drawWall(c,s);
+ for(const b of BUILD){const d=b.doors||{};const post=(x,y,w,h)=>{const g=c.createLinearGradient(x,0,x+w,0);g.addColorStop(0,"#3a2a1c");g.addColorStop(1,"#1a120a");c.fillStyle=g;c.fillRect(x,y,w,h);};
+  [["s",b.y+b.h-TW],["n",b.y]].forEach(([k,y])=>(d[k]||[]).forEach(([gx,gw])=>{const g=c.createLinearGradient(0,y,0,y+TW+FH);g.addColorStop(0,"rgba(0,0,0,.55)");g.addColorStop(1,"rgba(0,0,0,0)");c.fillStyle=g;c.fillRect(gx,y,gw,TW+FH);
+   post(gx-6,y-2,8,TW+FH+2);post(gx+gw-2,y-2,8,TW+FH+2);c.fillStyle="#2a1c10";c.fillRect(gx-6,y-4,gw+12,6);c.fillStyle="#6a4a2a";c.save();c.translate(gx+gw-2,y+TW);c.rotate(.9);c.fillRect(0,-3,gw*.45,6);c.restore();c.fillStyle="#5a1a1a";c.fillRect(gx+10,y+TW+FH-8,gw-20,10);}));
+  [["w",b.x],["e",b.x+b.w-TW]].forEach(([k,x])=>(d[k]||[]).forEach(([gy,gh])=>{post(x-2,gy-6,TW+4,8);post(x-2,gy+gh-2,TW+4,8);c.fillStyle="#5a1a1a";c.fillRect(x+(k==="w"?-12:TW+2),gy+12,10,gh-24);}));}
 }
 function drawWall(c,s){const b=bOf(s);const cap=b?b.cap:"#6e6585";
  if(s.w>=s.h){const outer=b&&s.y+s.h>=b.y+b.h-2,y0=s.y+s.h;
@@ -1143,6 +1149,82 @@ const SUBJECTS=[
 ]},
 ];
 
+/* Questions supplémentaires (niveau indiqué en 5e position : 1 facile, 2 moyen, 3 difficile) */
+const EXTRA={
+ m_prio:[["Calcule 20 − 2 × (3 + 4).","6",["126","19","38"],"Parenthèses : 3 + 4 = 7 ; puis 2 × 7 = 14 ; enfin 20 − 14 = 6.",3],["Calcule 18 ÷ 3 × 2.","12",["3","36","9"],"Même priorité : de gauche à droite. 18 ÷ 3 = 6, puis 6 × 2 = 12.",3],["Où placer des parenthèses pour que 2 + 3 × 4 = 20 ?","(2 + 3) × 4",["2 + (3 × 4)","2 + 3 × (4)","(2) + 3 × 4"],"(2 + 3) × 4 = 5 × 4 = 20.",2]],
+ m_rel:[["La température passe de −4 °C à +3 °C. Elle a augmenté de :","7 °C",["1 °C","−7 °C","−1 °C"],"De −4 à 0 : 4 degrés ; de 0 à 3 : 3 degrés. Total : 7 °C.",3],["Range dans l'ordre croissant : −2 ; 5 ; −7 ; 0","−7 ; −2 ; 0 ; 5",["−2 ; −7 ; 0 ; 5","0 ; −2 ; −7 ; 5","5 ; 0 ; −2 ; −7"],"Croissant = du plus petit au plus grand.",2],["Le point A(−3 ; 2) est placé :","à gauche de l'axe vertical, en haut",["à droite de l'axe vertical, en haut","à gauche de l'axe vertical, en bas","à droite de l'axe vertical, en bas"],"Abscisse −3 : à gauche. Ordonnée 2 : en haut.",3],["Calcule −5 + 8 − 6.","−3",["−19","3","9"],"−5 + 8 = 3, puis 3 − 6 = −3.",3]],
+ m_frac:[["Calcule 2/7 + 3/7.","5/7",["5/14","6/7","5/49"],"Même dénominateur : on ajoute les numérateurs.",2],["Calcule 1/2 + 1/4.","3/4",["2/6","2/4","1/6"],"1/2 = 2/4, donc 2/4 + 1/4 = 3/4.",3],["Quelle fraction est la plus grande ?","5/6",["2/3","7/12","3/4"],"Au dénominateur 12 : 10/12 ; 8/12 ; 7/12 ; 9/12.",3],["La fraction a/b est égale à :","a ÷ b",["b ÷ a","a × b","a − b"],"3/4 est le quotient de 3 par 4 : 0,75.",1],["7/4 s'écrit aussi :","1 + 3/4",["7 + 4","4/7","1 + 7/4"],"7/4 = 4/4 + 3/4 = 1 + 3/4.",3]],
+ m_prop:[["Une recette pour 4 personnes demande 200 g de farine. Pour 6 personnes, il faut :","300 g",["250 g","400 g","1 200 g"],"Pour 1 personne : 50 g ; pour 6 : 300 g.",2],["Sur une carte au 1/100 000, 1 cm représente :","1 km",["100 m","10 km","100 km"],"100 000 cm = 1 000 m = 1 km.",3],["Un article à 40 € baisse de 25 %. Son nouveau prix est :","30 €",["15 €","35 €","10 €"],"25 % de 40 = 10 ; 40 − 10 = 30 €.",3],["Une voiture parcourt 90 km en 1 h. En 20 min, elle parcourt :","30 km",["45 km","20 km","60 km"],"20 min = 1/3 d'heure ; 90 ÷ 3 = 30 km.",3],["Le prix payé est-il proportionnel au nombre de baguettes ?","oui, si chacune coûte le même prix",["non, jamais","oui, mais seulement le dimanche","non, le prix change chaque jour"],"Prix total = prix d'une baguette × nombre de baguettes.",1]],
+ m_geo:[["Deux angles dont la somme fait 90° sont :","complémentaires",["supplémentaires","opposés par le sommet","égaux"],"Si la somme fait 180°, ils sont supplémentaires.",2],["Deux angles opposés par le sommet sont :","de même mesure",["complémentaires","toujours droits","de mesures différentes"],"Ils sont formés par deux droites sécantes.",2],["Dans un triangle rectangle, les deux angles aigus ont pour somme :","90°",["180°","60°","45°"],"180° − 90° (angle droit) = 90°.",3],["La médiatrice d'un segment est :","la perpendiculaire au segment en son milieu",["la droite qui passe par une extrémité","la droite parallèle au segment","le cercle de diamètre ce segment"],"Tout point de la médiatrice est à égale distance des extrémités.",3],["Deux droites parallèles coupées par une sécante forment des angles alternes-internes :","de même mesure",["toujours droits","complémentaires","toujours différents"],"C'est une propriété des droites parallèles.",3]],
+ m_aire:[["Le volume d'un pavé droit se calcule avec :","longueur × largeur × hauteur",["longueur + largeur + hauteur","2 × (longueur + largeur)","longueur × largeur ÷ 2"],"V = L × l × h.",2],["Le périmètre d'un cercle de rayon 5 cm vaut environ :","31,4 cm",["78,5 cm","15,7 cm","10 cm"],"2 × π × 5 ≈ 31,4 cm.",3],["L'aire d'un disque de rayon 10 cm vaut environ :","314 cm²",["62,8 cm²","31,4 cm²","100 cm²"],"π × 10 × 10 ≈ 314 cm².",3],["1 L correspond à :","1 dm³",["1 cm³","1 m³","10 cm³"],"Et 1 mL = 1 cm³.",2],["Aire d'un parallélogramme de base 8 cm et de hauteur 5 cm :","40 cm²",["20 cm²","26 cm²","13 cm²"],"Aire = base × hauteur.",3]],
+ m_sym:[["Par symétrie centrale, un segment devient :","un segment de même longueur",["un segment deux fois plus long","un cercle","un point"],"La symétrie centrale conserve les longueurs.",1],["Le centre de symétrie d'un parallélogramme est :","le point d'intersection des diagonales",["le milieu d'un de ses côtés","un de ses sommets","il n'en a pas"],"Ses diagonales se coupent en leur milieu.",3],["A et A' sont symétriques par rapport à O et OA = 4 cm. AA' mesure :","8 cm",["4 cm","2 cm","16 cm"],"O est le milieu de [AA'] : AA' = 2 × OA.",2],["Les diagonales d'un parallélogramme :","se coupent en leur milieu",["sont toujours de même longueur","sont toujours perpendiculaires","ne se coupent jamais"],"C'est sa propriété caractéristique.",3]],
+ m_lit:[["Pour x = 3, combien vaut x² + 1 ?","10",["7","32","9"],"x² = 3 × 3 = 9 ; 9 + 1 = 10.",3],["Développe 3(x + 2).","3x + 6",["3x + 2","3x + 5","x + 6"],"On multiplie chaque terme : 3 × x + 3 × 2.",3],["Le périmètre d'un carré de côté c s'écrit :","4c",["c²","c + 4","2c"],"P = c + c + c + c = 4c.",2],["L'égalité 2x + 3 = 11 est vraie pour x =","4",["7","5","8"],"2 × 4 + 3 = 11.",3]],
+ f_conj:[["« pouvoir » au futur, avec « nous » :","nous pourrons",["nous pouvrons","nous pouvions","nous pûmes"],"Radical irrégulier : pourr-.",3],["« dire » au passé simple, avec « il » :","il dit",["il disa","il disait","il dira"],"Je dis, tu dis, il dit : même forme qu'au présent.",3],["« partir » à l'imparfait, avec « ils » :","ils partaient",["ils partirent","ils partiront","ils partent"],"Imparfait : -aient avec ils/elles.",2],["« prendre » au passé simple, avec « elle » :","elle prit",["elle prenait","elle prendra","elle prena"],"Je pris, tu pris, il prit…",3],["« Il marchait quand soudain il entendit un cri. » Le verbe au passé simple est :","entendit",["marchait","quand","cri"],"« entendit » est une action soudaine, de premier plan.",2],["« aller » au futur, avec « je » :","j'irai",["j'allerai","j'allais","j'allai"],"Le futur d'aller se forme sur ir-.",2]],
+ f_gram:[["« Les chevaliers, fatigués, rentrent au château. » « fatigués » est :","apposé au nom",["COD","sujet","complément du nom"],"Il est séparé du nom par des virgules : apposition.",3],["Dans « l'épée du roi », « du roi » est :","complément du nom",["COD","attribut du sujet","CC de lieu"],"Il complète le nom « épée ».",2],["Une subordonnée relative commence souvent par :","qui, que, dont, où",["et, ou, mais","quand, si, parce que","le, la, les"],"Exemple : le dragon qui crachait du feu.",3],["« Il donne une pomme à son ami. » Le verbe a :","un COD et un COI",["seulement un COD","seulement un COI","un attribut du sujet"],"Donner quoi ? une pomme (COD). À qui ? à son ami (COI).",3],["Dans « Le soir, le chevalier rêve », « Le soir » peut être :","déplacé ou supprimé",["remplacé par un verbe","jamais supprimé","mis au pluriel"],"C'est un complément circonstanciel : mobile et supprimable.",2]],
+ f_orth:[["Le pluriel de « un travail » est :","des travaux",["des travails","des travauxs","des travals"],"travail → travaux (mais détail → détails).",2],["Elle s'est ___ les mains.","lavé",["lavée","lavés","laver"],"Le COD « les mains » est après le verbe : pas d'accord.",3],["___ belles histoires !","Quelles",["Quel","Quelle","Qu'elles"],"histoires est féminin pluriel.",2],["Les pommes que j'ai ___ étaient bonnes.","mangées",["mangé","mangés","manger"],"Le COD « que » (les pommes) est placé avant avoir : accord.",3],["« leur » s'écrit sans s dans :","je leur parle",["leur livres","ils viennent avec leur amis","ils prennent leur sacs"],"Devant un verbe, leur est un pronom invariable.",3]],
+ f_voc:[["Un synonyme de « périlleux » :","dangereux",["paisible","joyeux","rapide"],"Une aventure périlleuse est pleine de dangers.",2],["« preux » signifie :","brave, vaillant",["peureux","rusé","menteur"],"On parle de preux chevaliers.",3],["Dans « lavable », le suffixe -able signifie :","qui peut être",["qui ne peut pas être","celui qui fait","petit"],"lavable = qui peut être lavé.",2],["« médiéval » signifie :","du Moyen Âge",["de la Renaissance","de l'Antiquité","du futur"],"Du latin medium aevum : l'âge du milieu.",2],["« Il pleut des cordes » est :","une expression imagée",["un sens propre","une phrase interrogative","un mot composé"],"Cela veut dire qu'il pleut très fort.",1]],
+ f_lit:[["Dans un récit, le narrateur est :","celui qui raconte l'histoire",["toujours l'auteur du livre","le personnage le plus méchant","le lecteur de l'histoire"],"Il peut être un personnage (je) ou extérieur (il).",2],["Dans une comédie, un quiproquo est :","un malentendu entre personnages",["une chanson d'amour","la fin heureuse de la pièce","un long monologue triste"],"Un personnage prend une chose ou une personne pour une autre.",3],["Le Roman de Renart a été écrit :","au Moyen Âge, par plusieurs auteurs",["au XIXe siècle, par Victor Hugo","au XVIIe siècle, par Molière","en Grèce antique, par Homère"],"Ses récits (les « branches ») datent des XIIe-XIIIe siècles.",3],["Au théâtre, une réplique, c'est :","ce que dit un personnage",["le décor de la scène","le titre de la pièce","la fin d'un acte"],"Les répliques forment le dialogue.",1],["Un monologue, c'est :","un personnage seul qui parle",["un dialogue à deux","une indication de mise en scène","une chanson finale"],"Il exprime souvent ses pensées.",2]],
+ a_desc:[["Complète : « She's got long ___ hair. »","curly",["curlies","curl","curling"],"L'adjectif est invariable.",2],["« What does he look like? » demande :","à quoi il ressemble",["ce qu'il regarde","ce qu'il aime","où il habite"],"to look like = ressembler à.",2],["Traduis : « Elle est petite et mince. »","She is short and slim.",["She has short and slim.","She is small hair and slim.","She has got short and slim."],"La taille et la silhouette → BE.",3],["« freckles » veut dire :","des taches de rousseur",["des fossettes","des boucles","des rides"],"He's got freckles : il a des taches de rousseur.",3],["« He's got a moustache » :","Il a une moustache",["Il a une barbe","Il a des lunettes","Il a un chapeau"],"a beard = une barbe.",1]],
+ a_hb:[["« Has she got a cat? » — « Yes, she ___. »","has",["is","does","have"],"Réponse courte : Yes, she has.",3],["« Are they tall? » — « No, they ___. »","aren't",["haven't","don't","isn't"],"Réponse courte avec BE.",3],["« I ___ hungry » (j'ai faim) :","am",["have","has","is"],"Piège : avoir faim = to be hungry.",3],["« We ___ a big house. »","have got",["has got","are","is got"],"we → have got.",2]],
+ a_adj:[["« a nice old red car » : l'ordre est :","opinion, âge, couleur",["couleur, âge, opinion","âge, opinion, couleur","opinion, couleur, âge"],"Opinion → taille → âge → couleur.",3],["Quelle phrase est correcte ?","He is a tall boy.",["He is a boy tall.","He is a talls boy.","He is tall a boy."],"L'adjectif se place avant le nom.",1],["Quelle phrase est correcte ?","They have got big brown eyes.",["They have got brown big eyes.","They have got eyes big brown.","They have got bigs browns eyes."],"Taille avant couleur, et pas de -s.",3]],
+ a_can:[["« Can I go out? » sert à :","demander la permission",["exprimer une capacité","donner un ordre","parler du passé"],"can = pouvoir (permission).",3],["« ___ you speak Spanish? »","Can",["Do can","Are","Cans"],"Can se place en tête de la question.",2],["« She can't swim » veut dire :","Elle ne sait pas nager",["Elle ne veut pas nager","Elle nage souvent mal","Elle n'a pas nagé"],"can't = ne pas pouvoir / ne pas savoir.",1]],
+ a_clo:[["« a hoodie » est :","un sweat à capuche",["un chapeau","une écharpe","un manteau"],"hood = capuche.",2],["« my grandparents » :","mes grands-parents",["mes parents","mes cousins","mes oncles et tantes"],"grandmother + grandfather.",1],["« my brother's jacket » veut dire :","la veste de mon frère",["les vestes de mes frères","mon frère et sa veste","une veste pour mon frère"],"'s = la possession (génitif).",3],["« I'm wearing jeans » veut dire :","Je porte un jean",["J'achète un jean","Je lave mon jean","J'aime les jeans"],"to wear = porter un vêtement.",2]],
+ e_pres:[["« ¿Cuántos años tienes? » :","Quel âge as-tu ?",["Combien d'amis as-tu ?","Comment vas-tu ?","Où habites-tu ?"],"cuántos = combien ; años = années.",2],["« Mucho gusto » se dit quand :","on rencontre quelqu'un",["on part en vacances","on mange un plat","on s'excuse"],"Cela veut dire : enchanté(e) !",2],["« ¿Qué tal? » veut dire :","Ça va ?",["Quoi ?","Qui est-ce ?","Combien ?"],"Réponse : Muy bien, gracias.",1],["Comment dit-on « Je suis français » ?","Soy francés",["Estoy francés","Tengo francés","Me llamo francés"],"La nationalité → ser.",3]],
+ e_num:[["« treinta y cinco » =","35",["53","25","45"],"treinta = 30 ; y cinco = et cinq.",3],["« miércoles » :","mercredi",["mardi","jeudi","mois"],"martes = mardi ; jueves = jeudi.",2],["« diciembre » :","décembre",["dix","dimanche","dixième"],"… octubre, noviembre, diciembre.",1],["« Hoy es lunes » :","Aujourd'hui, c'est lundi",["Demain, c'est lundi","Hier, c'était lundi","Lundi, c'est loin"],"hoy = aujourd'hui ; mañana = demain.",2]],
+ e_fam:[["« Mi madre es simpática » :","Ma mère est sympathique",["Ma mère est malade","Mon père est sympathique","Ma mère est simple"],"simpático / simpática = sympathique.",2],["« el primo » :","le cousin",["le premier","le frère","l'oncle"],"la prima = la cousine.",2],["« Tengo el pelo rubio » :","J'ai les cheveux blonds",["J'ai les cheveux roux","J'ai les yeux bleus","J'ai les cheveux bruns"],"rubio = blond ; pelirrojo = roux.",3],["« Somos cuatro en mi familia » :","Nous sommes quatre dans ma famille",["J'ai quatre frères et sœurs","Ma famille a quatre maisons","Nous avons quatre chiens"],"somos = nous sommes.",3]],
+ e_gus:[["« Le gusta el chocolate » :","Il aime le chocolat",["J'aime le chocolat","Tu aimes le chocolat","Il n'aime pas le chocolat"],"le gusta = ça lui plaît.",3],["« Prefiero el tenis » :","Je préfère le tennis",["Je joue au tennis","Je regarde le tennis","Je déteste le tennis"],"preferir = préférer.",2],["« escuchar música » :","écouter de la musique",["jouer de la musique","acheter de la musique","danser sur la musique"],"escuchar = écouter.",1],["« Me gusta mucho » :","J'aime beaucoup",["Je n'aime pas","J'aime un peu","Je déteste"],"mucho = beaucoup.",1]],
+ e_cul:[["La monnaie utilisée en Espagne est :","l'euro",["le peso","la peseta","le dollar"],"La peseta a été remplacée par l'euro en 2002.",2],["Le peintre Pablo Picasso a peint :","Guernica",["La Joconde","Les Nymphéas","La Nuit étoilée"],"Guernica (1937) dénonce un bombardement.",3],["Les Canaries sont des îles :","espagnoles",["portugaises","mexicaines","italiennes"],"Elles sont dans l'Atlantique, près de l'Afrique.",3],["En Espagne, le déjeuner se prend souvent :","vers 14 h",["vers 11 h","à midi pile","vers 17 h"],"Les repas y sont plus tardifs qu'en France.",3]],
+ h_grece:[["Sparte est célèbre pour :","ses guerriers et son éducation militaire",["ses philosophes et son théâtre","ses marchands et son grand port","ses temples dédiés à Athéna"],"Les jeunes Spartiates étaient entraînés au combat.",2],["Le dieu de la mer est :","Poséidon",["Hermès","Apollon","Dionysos"],"Il porte un trident.",1],["Périclès est :","un stratège qui dirige Athènes",["un dieu de l'Olympe grec","le poète auteur de l'Iliade","un roi guerrier de Sparte"],"Au Ve siècle av. J.-C. : le « siècle de Périclès ».",3],["Tous les Grecs partagent :","la même langue et les mêmes dieux",["le même roi et la même capitale","la même cité et la même armée","la même île et le même port"],"Mais ils vivent dans des cités indépendantes.",3]],
+ h_byz:[["Le mot « islam » signifie :","soumission à Dieu",["guerre sainte","prière du soir","livre sacré"],"Les fidèles de l'islam sont les musulmans.",3],["Parmi les cinq piliers de l'islam :","la prière et le jeûne du ramadan",["la messe et la confession","le baptême et la communion","le sabbat et la bar-mitsva"],"Aussi : profession de foi, aumône, pèlerinage à La Mecque.",3],["Les Turcs ottomans prennent Constantinople en :","1453",["622","1099","1492"],"C'est la fin de l'Empire byzantin.",3],["Les savants de Bagdad ont développé :","l'algèbre et l'astronomie",["l'imprimerie et la boussole","la machine à vapeur","l'électricité"],"Ils traduisent aussi de nombreux textes grecs.",3]],
+ h_feod:[["Le seigneur doit à son vassal :","protection et un fief",["la dîme et des corvées","un salaire chaque mois","une maison en ville"],"En échange de fidélité et d'aide militaire.",2],["La taille est :","un impôt payé au seigneur",["la hauteur d'un château","un outil agricole","une arme de chevalier"],"Les paysans paient aussi les banalités.",3],["Un château fort est souvent construit :","sur une hauteur, entouré de fossés",["au fond d'une vallée humide","au milieu d'une ville","sur une île déserte"],"Pour mieux se défendre et surveiller.",2],["Les communes sont :","des villes qui obtiennent des libertés",["des terres agricoles du seigneur","des monastères de moines","des armées de paysans"],"Les bourgeois obtiennent une charte de franchises.",3]],
+ h_egl:[["Le clergé régulier rassemble :","les moines et les moniales",["les prêtres des paroisses","les évêques des villes","les chevaliers croisés"],"Ils suivent une règle (regula en latin).",3],["L'art roman se reconnaît à :","ses murs épais et ses petites fenêtres",["ses grandes rosaces et ses vitraux","ses gratte-ciel de verre","ses colonnes grecques"],"Églises des XIe et XIIe siècles.",2],["Saint-Jacques-de-Compostelle se trouve en :","Espagne",["Italie","France","Portugal"],"C'est un grand lieu de pèlerinage.",2],["Être excommunié, c'est :","être exclu de l'Église",["devenir moine","partir en croisade","payer la dîme"],"C'était une sanction très grave.",3]],
+ h_roi:[["En 1328, la dynastie qui succède aux Capétiens directs est celle des :","Valois",["Bourbons","Mérovingiens","Carolingiens"],"Philippe VI de Valois devient roi.",3],["La bataille de Marignan (1515) est gagnée par :","François Ier",["Louis XIV","Henri IV","Philippe Auguste"],"« 1515, Marignan ».",2],["La monarchie absolue signifie que le roi :","détient tous les pouvoirs",["partage le pouvoir avec le peuple","est élu tous les sept ans","obéit au pape en tout"],"Louis XIV en est le symbole.",2],["Henri IV est assassiné en :","1610",["1598","1515","1789"],"Par Ravaillac, à Paris.",3]],
+ h_ren:[["Les Amérindiens sont décimés surtout par :","les maladies venues d'Europe",["les tremblements de terre","les famines en Europe","les guerres entre eux seulement"],"Variole, grippe… contre lesquelles ils n'étaient pas immunisés.",3],["Le commerce triangulaire relie :","l'Europe, l'Afrique et l'Amérique",["l'Asie, l'Océanie et l'Europe","la France, l'Italie et l'Espagne","l'Amérique, l'Asie et l'Antarctique"],"Il se développe surtout aux XVIIe et XVIIIe siècles.",3],["Jean Calvin est :","un réformateur protestant",["un explorateur portugais","un roi de France","un peintre italien"],"Il s'installe à Genève.",2],["Le massacre de la Saint-Barthélemy a lieu en :","1572",["1492","1598","1515"],"Des milliers de protestants sont tués.",3]],
+ g_pop:[["Une population qui vieillit compte :","beaucoup de personnes âgées",["beaucoup de naissances","peu de personnes âgées","surtout des enfants"],"C'est le cas du Japon ou de l'Europe.",2],["Le taux de natalité mesure :","les naissances pour 1 000 habitants",["les décès pour 1 000 habitants","le nombre de mariages par an","les habitants par km²"],"Le taux de mortalité mesure les décès.",3],["La densité de population s'exprime en :","habitants par km²",["km² par habitant","habitants par pays","naissances par an"],"Densité = population ÷ superficie.",3],["Les grands foyers de peuplement sont :","l'Asie de l'Est, l'Asie du Sud et l'Europe",["le Sahara, l'Amazonie et la Sibérie","l'Antarctique et le Groenland","les déserts d'Australie"],"Plus de la moitié de l'humanité vit en Asie.",3]],
+ g_res:[["Le stress hydrique, c'est :","le manque d'eau disponible",["une inondation","une eau trop chaude","une pluie acide"],"Il touche de nombreux pays d'Afrique et d'Asie.",3],["Les gaz à effet de serre viennent surtout :","des transports, de l'industrie et du chauffage",["des volcans uniquement","des arbres et des forêts","des océans et des lacs"],"Brûler pétrole, gaz et charbon libère du CO2.",3],["Une énergie fossile :","finira par s'épuiser",["est inépuisable","ne pollue jamais","vient directement du soleil"],"Ses réserves sont limitées.",2],["Le recyclage permet :","de réutiliser des matériaux",["de produire du pétrole","d'augmenter les déchets","de fabriquer de l'eau douce"],"Il économise des ressources.",1]],
+ s_resp:[["Le rythme respiratoire augmente pendant :","un effort physique",["le sommeil profond","un repas","la lecture"],"Les muscles consomment plus de dioxygène.",1],["L'eau de chaux se trouble en présence de :","dioxyde de carbone",["dioxygène","azote","vapeur d'eau"],"C'est le test du CO2.",2],["Les bronchioles se terminent par :","les alvéoles",["la trachée","le larynx","les bronches"],"Trachée → bronches → bronchioles → alvéoles.",3],["Fumer abîme surtout :","les poumons et les alvéoles",["les os des jambes","seulement l'estomac","les cheveux"],"Le tabac réduit les échanges gazeux.",2]],
+ s_circ:[["Le sang riche en dioxygène est :","rouge vif",["bleu","vert","noir"],"Le sang pauvre en dioxygène est rouge sombre, jamais bleu !",3],["Le sang apporte aux organes :","dioxygène et nutriments",["seulement de l'eau","du dioxyde de carbone","des déchets"],"Il repart avec du CO2 et des déchets.",2],["Le rythme cardiaque se mesure en :","battements par minute",["litres par heure","degrés Celsius","kilogrammes"],"Au repos : environ 60 à 80 battements par minute.",2],["Les veines ramènent le sang :","vers le cœur",["vers les poumons uniquement","vers les muscles","vers l'estomac"],"Les artères, elles, partent du cœur.",1]],
+ s_dig:[["La digestion commence dans :","la bouche",["l'estomac","l'intestin grêle","le gros intestin"],"Mastication et salive.",1],["Les fibres (légumes, céréales complètes) aident :","le transit intestinal",["la vision la nuit","la pousse des cheveux","la respiration"],"Elles facilitent le passage dans l'intestin.",3],["Le calcium, utile aux os, se trouve surtout dans :","les produits laitiers",["les bonbons","les sodas","les chips"],"Lait, yaourts, fromages…",2],["Ce qui n'est pas digéré est éliminé par :","le gros intestin",["l'estomac","les poumons","le cœur"],"Il forme les selles.",2]],
+ s_geol:[["Séismes et volcans sont nombreux :","aux limites des plaques",["au centre des continents","seulement au pôle Nord","dans les déserts"],"Exemple : la « ceinture de feu » du Pacifique.",2],["Un fossile est :","une trace d'être vivant conservée dans une roche",["une roche volcanique très chaude","un cristal de sel","un minéral précieux"],"On en trouve surtout dans les roches sédimentaires.",2],["L'échelle de Richter mesure :","la magnitude d'un séisme",["la hauteur d'un volcan","la vitesse du vent","la profondeur de la mer"],"Elle évalue l'énergie libérée.",3],["Pour limiter le risque sismique, on peut :","construire des bâtiments parasismiques",["empêcher les séismes","boucher les volcans","déplacer les plaques"],"On ne peut pas empêcher un séisme.",2]],
+ s_eco:[["Un réseau trophique est :","un ensemble de chaînes alimentaires reliées",["une seule chaîne alimentaire","un groupe de prédateurs","un parc naturel"],"Les chaînes s'entrecroisent dans un milieu.",3],["Le peuplement d'un milieu dépend :","de la lumière, de la température, de l'eau…",["seulement de sa couleur","uniquement de sa taille","du jour de la semaine"],"Ce sont les facteurs du milieu.",2],["Une espèce invasive est :","une espèce introduite qui prolifère",["une espèce qui disparaît","une espèce protégée","une espèce marine"],"Exemple : le frelon asiatique en France.",3],["La migration est :","un déplacement saisonnier d'animaux",["un sommeil d'hiver","un changement de couleur","une façon de chasser"],"Exemple : les hirondelles partent en Afrique.",1]],
+ p_etat:[["Le passage de liquide à gaz s'appelle :","la vaporisation",["la fusion","la condensation","la solidification"],"L'ébullition est une vaporisation rapide.",2],["Le passage de liquide à solide s'appelle :","la solidification",["la fusion","la liquéfaction","la vaporisation"],"L'eau qui gèle se solidifie.",1],["La glace fond à :","0 °C",["100 °C","−10 °C","37 °C"],"Sous la pression atmosphérique normale.",1],["Le sel répandu sur les routes en hiver :","fait fondre la glace sous 0 °C",["réchauffe l'air","rend la route plus froide","empêche la pluie"],"L'eau salée gèle en dessous de 0 °C.",3]],
+ p_mel:[["La décantation permet :","de laisser les particules se déposer au fond",["de dissoudre le sucre","de faire bouillir l'eau","de colorer un liquide"],"Elle précède souvent la filtration.",2],["La distillation sépare les constituants d'un mélange grâce à :","l'ébullition puis la liquéfaction",["la filtration sur papier","un aimant","la congélation"],"On chauffe, on vaporise, puis on refroidit la vapeur.",3],["Quand on agite, le sucre se dissout :","plus vite",["moins vite","jamais","seulement à froid"],"L'agitation accélère la dissolution.",2],["L'eau du robinet est :","un mélange homogène",["un corps pur","un mélange hétérogène","un solide"],"Elle contient des sels minéraux dissous.",2]],
+ p_mv:[["Convertis 1,5 L en mL :","1 500 mL",["150 mL","15 mL","15 000 mL"],"1 L = 1 000 mL.",2],["Convertis 750 g en kg :","0,75 kg",["7,5 kg","75 kg","0,075 kg"],"1 000 g = 1 kg.",2],["Pour mesurer le volume d'un caillou, on peut :","le plonger dans l'eau et lire la hausse",["le peser sur une balance","mesurer sa longueur","le chauffer"],"Le volume d'eau déplacé = volume du caillou.",3],["1 m³ est égal à :","1 000 L",["100 L","10 L","1 L"],"1 m³ = 1 000 dm³ = 1 000 L.",3]],
+ p_elec:[["Dans un circuit, la pile est :","le générateur",["un récepteur","un interrupteur","un fil"],"Elle fournit l'énergie électrique.",1],["Pour s'allumer, une lampe doit être reliée :","aux deux bornes de la pile",["à une seule borne de la pile","à l'interrupteur seulement","à un fil isolé"],"Le circuit doit être fermé.",2],["Le corps humain est :","conducteur : l'électricité est dangereuse",["isolant : aucun danger","sans effet sur le courant","un générateur"],"Ne jamais toucher une prise ou un fil dénudé.",2],["À la maison, les appareils sont branchés :","en dérivation",["en série","sans fil","sur une seule boucle"],"Ainsi chacun fonctionne indépendamment.",3]],
+ p_lum:[["Pour voir un objet, il faut que :","la lumière venant de l'objet entre dans l'œil",["l'œil envoie de la lumière vers l'objet","l'objet soit une source de lumière","il fasse nuit"],"L'œil est un récepteur de lumière.",2],["Un objet opaque :","ne laisse pas passer la lumière",["laisse passer toute la lumière","produit de la lumière","est toujours transparent"],"Il crée une ombre.",1],["Lors d'une éclipse de Soleil :","la Lune passe entre la Terre et le Soleil",["la Terre passe entre la Lune et le Soleil","le Soleil passe derrière la Terre","la Lune s'éteint"],"L'ombre de la Lune tombe sur la Terre.",3],["Une année-lumière est :","une distance",["une durée","une vitesse","une couleur"],"La distance parcourue par la lumière en un an.",3]]
+};
+
+/* Générateurs de calculs, avec niveau l = 1 (facile), 2, 3 (difficile) */
+const GEN={
+ m_tab(l){const a=l===1?R(2,5):l===2?R(3,9):R(6,9),b=l===1?R(2,10):R(4,10),g=a*b;
+  return[`${a} × ${b} = ?`,g,dst(g,[a*(b+1),a*(b-1),(a+1)*b,g+10,g-2]),`${a} × ${b} = ${g}. Astuce : ${a} × ${b} = ${b} × ${a}.`];},
+ m_prio(l){const a=R(2,12),b=R(2,9),c=R(2,9);
+  if(l===1){const g=a+b*c;return[`${a} + ${b} × ${c} = ?`,g,dst(g,[(a+b)*c,a*b+c,g+1]),`On fait d'abord ${b} × ${c} = ${b*c}, puis ${a} + ${b*c} = ${g}.`];}
+  if(l===2){if(Math.random()<.5){const g=(a+b)*c;return[`(${a} + ${b}) × ${c} = ?`,g,dst(g,[a+b*c,a*b+c,g+c]),`Parenthèses d'abord : ${a} + ${b} = ${a+b}, puis × ${c} = ${g}.`];}
+   const x=a*b,g=x-c;return[`${a} × ${b} − ${c} = ?`,g,dst(g,[a*(b-c),x+c,g+10]),`${a} × ${b} = ${x}, puis ${x} − ${c} = ${g}.`];}
+  const d=R(2,5),A=R(20,40),g=A-b*c+d;return[`${A} − ${b} × ${c} + ${d} = ?`,g,dst(g,[(A-b)*c+d,A-b*(c+d),g-2*d,A-b*c-d]),`${b} × ${c} = ${b*c} ; ${A} − ${b*c} = ${A-b*c} ; puis + ${d} = ${g}.`];},
+ m_rel(l){const big=l===3?15:9,a=R(1,big)*(Math.random()<.5?-1:1),b=R(1,big)*(Math.random()<.5?-1:1);
+  if(l===1){const x=-R(1,12),y=R(-12,12);if(x===y)return GEN.m_rel(l);const g=Math.min(x,y);return[`Quel nombre est le plus petit : ${x} ou ${y} ?`,String(g),[String(Math.max(x,y)),"ils sont égaux","on ne peut pas savoir"],`Sur la droite graduée, ${g} est le plus à gauche : il est plus petit.`];}
+  if(l===2){const g=a+b;return[`${pr(a)} + ${pr(b)} = ?`,sg(g),dst(sg(g),[sg(-g),sg(a-b),sg(-(a-b)),sg(g+2)]),`${pr(a)} + ${pr(b)} = ${sg(g)}.`];}
+  const g=a-b;return[`${pr(a)} − ${pr(b)} = ?`,sg(g),dst(sg(g),[sg(a+b),sg(-g),sg(-(a+b)),sg(g-2)]),`Soustraire un nombre, c'est ajouter son opposé : ${pr(a)} + ${pr(-b)} = ${sg(g)}.`];},
+ m_frac(l){if(l===1){const d=pick([2,4,5,10]),n=R(1,d-1),N=d*R(2,6),g=N/d*n;return[`Calcule ${n}/${d} de ${N}.`,g,dst(g,[N/d,N*n,g+n,N-g]),`${N} ÷ ${d} = ${N/d}, puis × ${n} = ${g}.`];}
+  if(l===2){const p=pick([[1,2],[2,3],[3,4],[2,5],[1,3],[3,5]]),k=R(2,5),n=p[0]*k,d=p[1]*k;return[`Forme irréductible de ${n}/${d} ?`,`${p[0]}/${p[1]}`,dst(`${p[0]}/${p[1]}`,[`${p[1]}/${p[0]}`,`${p[0]*2}/${p[1]*2}`,`${p[0]}/${p[1]+1}`,`${p[0]+1}/${p[1]}`]),`On divise le haut et le bas par ${k} : ${n}/${d} = ${p[0]}/${p[1]}.`];}
+  const d=pick([3,4,6,8,12]),a=R(1,d-2),b=R(1,d-1-a),g=`${a+b}/${d}`;return[`Calcule ${a}/${d} + ${b}/${d}.`,g,dst(g,[`${a+b}/${2*d}`,`${a*b}/${d}`,`${a+b+1}/${d}`,`${a+b}/${d*d}`]),`Même dénominateur : ${a} + ${b} = ${a+b}, on garde ${d}.`];},
+ m_prop(l){if(l===1){const p=pick([10,50]),N=pick([40,60,80,120,200]),g=N*p/100;return[`Calcule ${p} % de ${N}.`,g,dst(g,[N-g,p,g*2,N/4]),`${p} % de ${N} = ${N} × ${p} ÷ 100 = ${g}.`];}
+  if(l===2){const u=R(2,6),a=R(2,5),b=R(6,10),o=pick(["cahiers","crayons","croissants","billets"]),g=u*b;return[`${a} ${o} coûtent ${u*a} €. Combien coûtent ${b} ${o} ?`,g+" €",dst(g+" €",[(u*a+b-a)+" €",(u*a*b)+" €",(g+u)+" €"]),`1 coûte ${u*a} ÷ ${a} = ${u} €, donc ${b} coûtent ${g} €.`];}
+  const p=pick([20,25,75,30]),N=pick([40,60,80,120,200]),g=N*p/100;return[`Un jeu à ${N} € est soldé à −${p} %. Combien coûte-t-il ?`,(N-g)+" €",dst((N-g)+" €",[g+" €",(N-p)+" €",(N+g)+" €"]),`${p} % de ${N} = ${g} € ; ${N} − ${g} = ${N-g} €.`];},
+ m_geo(l){if(l===3){const t=R(20,100),g=(180-t)/2;if(g%1)return GEN.m_geo(l);return[`Un triangle isocèle a un angle principal de ${t}°. Chaque angle à la base mesure :`,g+"°",dst(g+"°",[(180-t)+"°",t+"°",(90-t/2+10)+"°"]),`(180 − ${t}) ÷ 2 = ${g}°.`];}
+  const a=R(25,80),b=R(25,80),g=180-a-b;return[`Dans un triangle, deux angles mesurent ${a}° et ${b}°. Le troisième mesure :`,g+"°",dst(g+"°",[(360-a-b)+"°",(a+b)+"°",(g+10)+"°"]),`180 − ${a} − ${b} = ${g}°.`];},
+ m_aire(l){const L=R(4,15),w=R(2,L-1);
+  if(l===1){const g=2*(L+w);return[`Périmètre d'un rectangle de ${L} cm sur ${w} cm ?`,g+" cm",dst(g+" cm",[(L*w)+" cm",(L+w)+" cm",(g+2)+" cm"]),`P = 2 × (${L} + ${w}) = ${g} cm.`];}
+  if(l===2){const g=L*w;return[`Aire d'un rectangle de ${L} cm sur ${w} cm ?`,g+" cm²",dst(g+" cm²",[(2*(L+w))+" cm²",(L+w)+" cm²",(g*2)+" cm²"]),`A = ${L} × ${w} = ${g} cm².`];}
+  const b=R(2,10)*2,h=R(3,12),g=b*h/2;return[`Aire d'un triangle de base ${b} cm et de hauteur ${h} cm ?`,g+" cm²",dst(g+" cm²",[(b*h)+" cm²",(b+h)+" cm²",(g+h)+" cm²"]),`A = ${b} × ${h} ÷ 2 = ${g} cm².`];},
+ m_lit(l){if(l===1){const a=R(2,9),b=R(1,9),x=R(2,6),g=a*x+b;return[`Pour x = ${x}, combien vaut ${a}x + ${b} ?`,g,dst(g,[Number(""+a+x)+b,(a+b)*x,a+x+b,g+a]),`${a} × ${x} + ${b} = ${a*x} + ${b} = ${g}.`];}
+  if(l===2){const a=R(2,9),b=R(2,9),v=pick(["a","x","y"]);return[`Réduis ${a}${v} + ${b}${v}.`,`${a+b}${v}`,dst(`${a+b}${v}`,[`${a*b}${v}`,`${a+b}${v}²`,`${a+b}`]),`${a}${v} + ${b}${v} = (${a} + ${b})${v} = ${a+b}${v}.`];}
+  const k=R(2,7),a=R(1,9);return[`Développe ${k}(x + ${a}).`,`${k}x + ${k*a}`,dst(`${k}x + ${k*a}`,[`${k}x + ${a}`,`x + ${k*a}`,`${k}x + ${k+a}`]),`On distribue : ${k} × x + ${k} × ${a} = ${k}x + ${k*a}.`];}
+};
+SUBJECTS.forEach(s=>s.chapters.forEach(c=>{if(GEN[c.id])c.gen=GEN[c.id];}));
+
 /* ================= SON ================= */
 let AC=null,muted=!!store("cz_mute");const sndT={};
 function ac(){if(!AC){try{AC=new(window.AudioContext||window.webkitAudioContext)();}catch(e){}}if(AC&&AC.state==="suspended")AC.resume();return AC;}
@@ -1173,41 +1255,71 @@ const sfx={
  empty:()=>tone(300,.05,"square",.05)
 };
 
-/* ================= QUESTIONS ================= */
+/* ================= QUESTIONS : progression et révision espacée ================= */
 const ALLCH={};SUBJECTS.forEach(s=>s.chapters.forEach(c=>{c.sub=s;ALLCH[c.id]=c;}));
-const DIFF={facile:{t:60,es:.8,ed:.6,cnt:.7,sp:18,lbl:"60 s par question · monstres lents · dégâts réduits."},normal:{t:40,es:1,ed:1,cnt:1,sp:14,lbl:"40 s par question · monstres normaux."},expert:{t:25,es:1.2,ed:1.35,cnt:1.3,sp:11,lbl:"25 s par question · monstres enragés."}};
-const S={name:store("cz_name")||"",diff:store("cz_diff")||"normal",sel:new Set(store("cz_sel")||[]),mode:"game"};
-let qBag=[],posBag=[];
-function buildBag(){qBag=[];[...S.sel].forEach(id=>{const c=ALLCH[id];if(!c)return;c.qs.forEach(q=>qBag.push({c,q}));if(c.gen)for(let i=0;i<Math.max(8,14-c.qs.length);i++)qBag.push({c,gen:1});});qBag=shuffle(qBag);}
-function drawQ(){if(!qBag.length)buildBag();const it=qBag.pop();const q=it.gen?it.c.gen():it.q;
-  if(!posBag.length)posBag=shuffle([0,1,2,3,0,1,2,3]);const pos=posBag.pop(),opts=shuffle(q[2].map(String)).slice(0,3);opts.splice(pos,0,String(q[1]));
-  return{tag:it.c.sub.icon+" "+it.c.sub.name+" · "+it.c.name,q:q[0],good:String(q[1]),opts,pos,ex:q[3]||""};}
+const DIFF={facile:{tf:1.35,es:.8,ed:.6,cnt:.7,sp:18,lbl:"Monstres lents, dégâts réduits."},normal:{tf:1,es:1,ed:1,cnt:1,sp:14,lbl:"Monstres normaux."},expert:{tf:.8,es:1.2,ed:1.35,cnt:1.3,sp:11,lbl:"Monstres enragés."}};
+const TIMERS={adapt:{f:1,lbl:"⏱️ Adapté"},large:{f:1.6,lbl:"⏳ Large"},off:{f:0,lbl:"♾️ Sans chrono"}};
+const S={name:store("cz_name")||"",diff:store("cz_diff")||"normal",timer:store("cz_timer")||"adapt",sel:new Set(store("cz_sel")||[]),mode:"game"};
+function hashStr(s){let h=5381;for(let i=0;i<s.length;i++)h=(h*33+s.charCodeAt(i))|0;return(h>>>0).toString(36);}
+// banque : niveau auto selon la position (questions de base d'abord) + questions supplémentaires
+SUBJECTS.forEach(s=>s.chapters.forEach(c=>{const n=c.qs.length;c.items=c.qs.map((q,i)=>({q,lvl:i<n*.45?1:i<n*.8?2:3,id:hashStr(q[0])}));(EXTRA[c.id]||[]).forEach(q=>c.items.push({q,lvl:q[4]||2,id:hashStr(q[0])}));}));
+let QH=null,recent=[],lastCh=null,posBag=[];
+function qhKey(){return"cz_qh_"+(S.name||"anon").toLowerCase().trim();}
+function qhLoad(){QH=store(qhKey());if(!QH||!QH.q)QH={q:{},ch:{},tick:0};}
+function qhSave(){store(qhKey(),QH);}
+function chS(id){return QH.ch[id]||(QH.ch[id]={lvl:1,st:0,h:[],n:0,ok:0});}
+function mastery(id){const h=chS(id).h;return h.length?h.reduce((a,b)=>a+b,0)/h.length:0;}
+function pickChapter(){const ids=[...S.sel].filter(id=>ALLCH[id]);if(!ids.length)return null;let pool=ids.length>1?ids.filter(i=>i!==lastCh):ids;
+ const w=pool.map(id=>{const s=chS(id);return 1.4-(s.h.length>=4?mastery(id):.4)+(s.n<3?.4:0);});let t=w.reduce((a,b)=>a+b,0),r=Math.random()*t;for(let i=0;i<pool.length;i++){r-=w[i];if(r<=0)return ALLCH[pool[i]];}return ALLCH[pool[0]];}
+function pickItem(c,L){const T=QH.tick,cand=c.items.filter(it=>it.lvl<=L&&!recent.includes(it.id));if(!cand.length)return null;
+ const sc=it=>{const h=QH.q[it.id];let s;if(!h)s=10+(it.lvl===L?5:0);else if(h.b===0&&h.d<=T)s=20;else if(h.d<=T)s=6-h.b+(it.lvl===L?2:0);else s=-5+(T-h.l)*.05;return s+Math.random()*3;};
+ cand.sort((a,b)=>sc(b)-sc(a));return sc(cand[0])>-4?cand[0]:null;}
+function drawQ(){if(!QH)qhLoad();QH.tick++;const c=pickChapter();if(!c)return null;const cs=chS(c.id);let L=cs.lvl;if(L>1&&Math.random()<.22)L--;
+ let it=null,q,gen=false;const useGen=c.gen&&(!c.items.length||Math.random()<.55);
+ if(!useGen)it=pickItem(c,L);
+ if(it)q=it.q;else if(c.gen){q=c.gen(L);gen=true;}else{const any=c.items.filter(x=>x.lvl<=L);it=any[Math.random()*any.length|0]||c.items[0];q=it.q;}
+ lastCh=c.id;if(it){recent.push(it.id);if(recent.length>24)recent.shift();}
+ if(!posBag.length)posBag=shuffle([0,1,2,3,0,1,2,3]);const pos=posBag.pop(),opts=shuffle(q[2].map(String)).slice(0,3);opts.splice(pos,0,String(q[1]));
+ const lvl=it?it.lvl:L;return{c,id:it?it.id:null,gen,lvl,tag:c.sub.icon+" "+c.sub.name+" · "+c.name,q:q[0],good:String(q[1]),opts,pos,ex:q[3]||""};}
+function record(Q,ok){const cs=chS(Q.c.id);cs.n++;if(ok)cs.ok++;cs.h.push(ok?1:0);if(cs.h.length>10)cs.h.shift();let msg=null;
+ if(ok){cs.st=Math.max(0,cs.st)+1;if(cs.st>=3&&cs.lvl<3){cs.lvl++;cs.st=0;msg=`📈 Niveau ${cs.lvl} débloqué en « ${Q.c.name} » !`;}}
+ else{cs.st=Math.min(0,cs.st)-1;if(cs.st<=-2&&cs.lvl>1){cs.lvl--;cs.st=0;}}
+ if(Q.id){const h=QH.q[Q.id]||(QH.q[Q.id]={b:0,d:0,l:0,n:0,k:0});h.n++;h.l=QH.tick;if(ok){h.b=Math.min(5,h.b+1);h.d=QH.tick+[0,10,20,40,70,120][h.b];}else{h.b=0;h.k++;h.d=QH.tick+5;}}
+ qhSave();return msg;}
+function qTime(Q){if(S.timer==="off")return 0;const words=(Q.q+" "+Q.opts.join(" ")).split(/\s+/).length,isCalc=/maths/.test(Q.c.sub.id)||/\d\s*[×÷+−]\s*\d/.test(Q.q);
+ let t=12+words*1.15+(isCalc?10:0)+(Q.lvl-1)*4;t*=TIMERS[S.timer].f*DIFF[S.diff].tf;return Math.round(clamp(t,20,120));}
+const stars=l=>`<span style="color:#ffd34d">${"★".repeat(l)}</span><span style="color:#ffffff33">${"★".repeat(3-l)}</span>`;
+/* ----- lecture à voix haute ----- */
+function speak(Q){try{const ss=window.speechSynthesis;if(!ss)return;ss.cancel();const lang=Q.c.sub.id==="en"?"en-GB":Q.c.sub.id==="es"?"es-ES":"fr-FR";const vs=ss.getVoices();
+ const say=(t,lg)=>{const u=new SpeechSynthesisUtterance(t);u.lang=lg;u.rate=.92;const v=vs.find(v=>v.lang&&v.lang.replace("_","-").startsWith(lg.slice(0,2)));if(v)u.voice=v;ss.speak(u);};
+ say(Q.q.replace(/___/g,"blanc").replace(/×/g," fois ").replace(/÷/g," divisé par ").replace(/−/g," moins "),"fr-FR");Q.opts.forEach((o,i)=>{if(document.querySelector("#answers").children[i].classList.contains("gone"))return;say("ABCD"[i]+".","fr-FR");say(o,lang);});}catch(e){}}
 let QS={open:false};
 function askQ(title,cls,okTxt,koTxt){return new Promise(res=>{
   if(G)G.paused++;
-  const Q=drawQ();QS={open:true,lock:false,joker:false,Q,done:null,cont:null};
+  const Q=drawQ();if(!Q){if(G)G.paused=Math.max(0,G.paused-1);res({ok:true});return;}QS={open:true,lock:false,joker:false,Q,done:null,cont:null};
   const box=$("#answers"),fb=$("#qfb"),kd=$("#qKind");kd.textContent=title;
   $("#qbox").style.setProperty("--qc",{sup:"#19d3c5",ult:"#ff5a3c",def:"#a46bff",free:"#2ee59d"}[cls]||"#19d3c5");
-  $("#qTag").textContent=Q.tag;$("#qText").textContent=Q.q;fb.className="qfb";fb.innerHTML="";
-  const limit=DIFF[S.diff].t,WT=900,t0=performance.now()+WT;let lastS=null;QS.wait=true;
+  $("#qTag").innerHTML=`${esc(Q.tag)} <span style="margin-left:4px" title="Niveau">${stars(Q.lvl)}</span>`;$("#qText").textContent=Q.q;fb.className="qfb";fb.innerHTML="";
+  const limit=qTime(Q),WT=900,t0=performance.now()+WT;let lastS=null;QS.wait=true;$("#qBarW").style.display=limit?"":"none";$("#qSec").textContent=limit?limit+" s":"♾️";
   setTimeout(()=>{QS.wait=false;box.classList.remove("wait");updJoker();},WT);
   box.innerHTML="";box.classList.add("wait");
   Q.opts.forEach((o,i)=>{const b=document.createElement("button");b.className="ans";b.innerHTML=`<span class="k">${"ABCD"[i]}</span><span>${esc(o)}</span>`;b.onclick=()=>done(i);box.appendChild(b);});
-  const done=async i=>{if(QS.lock||(QS.wait&&i>=0))return;QS.lock=true;clearInterval(QS.ti);updJoker();
-    const el=(performance.now()-t0)/1000,ok=i===Q.pos,fast=ok&&el<limit*.35;
+  $("#ttsBtn").onclick=()=>speak(Q);
+  const done=async i=>{if(QS.lock||(QS.wait&&i>=0))return;QS.lock=true;clearInterval(QS.ti);updJoker();try{speechSynthesis.cancel();}catch(e){}
+    const el=(performance.now()-t0)/1000,ok=i===Q.pos,fast=ok&&limit>0&&el<limit*.35;
     [...box.children].forEach((b,k)=>{b.disabled=true;if(k===Q.pos)b.classList.add("ok");else if(k===i)b.classList.add("ko");else b.classList.add("dim");});
-    const g=gstats();g.total++;
-    if(ok){sfx.good();g.correct++;const pts=100+(fast?50:0)+(cls==="ult"?50:0);g.score+=pts;
+    const g=gstats();g.total++;const lvMsg=record(Q,ok);
+    if(ok){sfx.good();g.correct++;const pts=80+Q.lvl*20+(fast?50:0)+(cls==="ult"?50:0);g.score+=pts;
       let heal="";if(G&&S.mode==="game"){G.P.hp=Math.min(100,G.P.hp+6);G.energy=Math.min(100,G.energy+8);heal=" · +6 PV";}
-      fb.className="qfb show good";fb.innerHTML=`<div class="tx"><b>✓ ${esc(okTxt)} +${pts} pts${fast?" · ⚡ rapide":""}${heal}</b>${esc(Q.ex)}</div><button class="btn2" id="contBtn">Continuer ▶ <small>(Entrée)</small></button>`;}
+      fb.className="qfb show good";fb.innerHTML=`<div class="tx"><b>✓ ${esc(okTxt)} +${pts} pts${fast?" · ⚡ rapide":""}${heal}</b>${lvMsg?`<b style="color:#ffd34d">${esc(lvMsg)}</b>`:""}${esc(Q.ex)}</div><button class="btn2" id="contBtn">Continuer ▶ <small>(Entrée)</small></button>`;}
     else{sfx.bad();g.errors.push({q:Q.q,good:Q.good,yours:i<0?"(temps écoulé)":Q.opts[i],ex:Q.ex,tag:Q.tag});
-      fb.className="qfb show bad";fb.innerHTML=`<div class="tx"><b>✗ ${i<0?"Temps écoulé ! ":""}${esc(koTxt)}</b>Bonne réponse : <b style="display:inline;color:#7fffc4">${esc(Q.good)}</b>${Q.ex?" — "+esc(Q.ex):""}</div><button class="btn2" id="contBtn">Continuer ▶ <small>(Entrée)</small></button>`;}
+      fb.className="qfb show bad";fb.innerHTML=`<div class="tx"><b>✗ ${i<0?"Temps écoulé ! ":""}${esc(koTxt)}</b>Bonne réponse : <b style="display:inline;color:#7fffc4">${esc(Q.good)}</b>${Q.ex?" — "+esc(Q.ex):""}<br><small style="color:#c8cbe6">🔁 Cette question reviendra un peu plus tard pour t'entraîner.</small></div><button class="btn2" id="contBtn">Continuer ▶ <small>(Entrée)</small></button>`;}
     await new Promise(r=>{let fin=false;const go=()=>{if(fin)return;fin=true;QS.cont=null;r();};QS.cont=go;$("#contBtn").onclick=go;setTimeout(()=>$("#contBtn")&&$("#contBtn").focus(),50);});
     $("#qmodal").classList.remove("show");QS.open=false;if(G)G.paused=Math.max(0,G.paused-1);hudForce=true;res({ok,fast});};
-  QS.done=done;QS.abort=()=>{if(QS.lock)return;QS.lock=true;clearInterval(QS.ti);$("#qmodal").classList.remove("show");QS.open=false;if(G)G.paused=Math.max(0,G.paused-1);res({ok:false,abort:true});};
-  $("#qmodal").classList.add("show");updJoker();
-  clearInterval(QS.ti);
-  QS.ti=setInterval(()=>{const left=Math.min(limit,Math.max(0,limit-(performance.now()-t0)/1000)),sec=Math.ceil(left);
+  QS.done=done;QS.abort=()=>{if(QS.lock)return;QS.lock=true;clearInterval(QS.ti);try{speechSynthesis.cancel();}catch(e){}$("#qmodal").classList.remove("show");QS.open=false;if(G)G.paused=Math.max(0,G.paused-1);res({ok:false,abort:true});};
+  $("#qmodal").classList.add("show");updJoker();clearInterval(QS.ti);
+  if(store("cz_tts"))setTimeout(()=>speak(Q),300);
+  QS.ti=setInterval(()=>{if(!limit)return;const left=Math.min(limit,Math.max(0,limit-(performance.now()-t0)/1000)),sec=Math.ceil(left);
     $("#qBar").style.width=left/limit*100+"%";$("#qSec").textContent=sec+" s";$("#qBarW").classList.toggle("danger",left<=5);
     if(left<=5&&sec!==lastS){lastS=sec;sfx.tick();}if(left<=0)done(-1);},80);
 });}
@@ -1216,7 +1328,6 @@ function jokers(){return G?G.jokers:S.revJ;}
 function updJoker(){const n=jokers()||0;$("#jokerN").textContent=`(${n})`;$("#jokerBtn").disabled=n<=0||QS.lock||QS.joker||QS.wait;}
 $("#jokerBtn").onclick=()=>{if(!QS.open||QS.lock||QS.joker||QS.wait||(jokers()||0)<=0)return;QS.joker=true;if(G)G.jokers--;else S.revJ--;sfx.sel();
   const box=$("#answers"),w=shuffle([0,1,2,3].filter(i=>i!==QS.Q.pos)).slice(0,2);w.forEach(i=>box.children[i].classList.add("gone"));updJoker();};
-
 
 /* =========================================================
    COLLÈGE ZOMBIE — jeu
@@ -1272,7 +1383,7 @@ function startGame(persist){
  G=Object.assign(persist,{P:{x:REFUGE.x,y:REFUGE.y+40,r:16,hp:100,ang:-Math.PI/2,ph:0,mv:0,inv:1,dash:0,dashCd:0,dvx:0,dvy:0,cd:0,swing:0,swingMax:.2,swingSide:1,muzzle:0,mz:null,vx:0,vy:0},
   E:[],B:[],FX:[],PK:[],CR:[],CP:[],WPK:[],DEC:[],COR:[],boss:null,fight:-1,paused:0,time:persist.time||0,spawnT:2,hordeT:80,flowT:0,flowDirty:true,cam:{x:REFUGE.x,y:REFUGE.y},shake:0,region:"",saveT:20,ptile:-1,interact:null,kneelBusy:false,seen:{},lightT:rnd(15,30),flash:0,hurtA:0});
  G.CR=CRATES.map((p,i)=>({id:i,x:p[0],y:p[1],lock:0,open:false,resp:0}));
- G.CP=CAPT.map((p,i)=>({id:i,n:p[0],x:p[1],y:p[2],lock:0,amb:false,sk:"c"+i})).filter(k=>!G.rescued.includes(k.id));
+ G.CP=CAPT.map((p,i)=>{const r=REGIONS.find(r=>inRect({x:p[1],y:p[2]},r));return{id:i,n:p[0],x:p[1],y:p[2],lock:0,amb:false,sk:"c"+i,place:r?r.name.replace(/^(LE |LA |L')/,"").toLowerCase():"abords"};}).filter(k=>!G.rescued.includes(k.id));
  G.WPK=G.wpk.map(w=>({kind:"weapon",id:w.id,x:w.x,y:w.y}));G.PK=POTS.map(p=>({kind:"potion",x:p[0],y:p[1],resp:0}));
  G.slots.forEach(id=>{if(id&&WEAP[id].ammo&&G.ammo[id]==null)G.ammo[id]=WEAP[id].ammo;});
  refreshBars();show("game");resize();hudForce=true;updSlots();$("#hudPor").innerHTML=portraitSVG(S.look);$("#hudPor").style.setProperty("--pc",S.look.top);checkRotate();}
@@ -1290,12 +1401,12 @@ function fx(x,y,col,n,sp,life=.5,r=3,o){for(let i=0;i<n;i++){const a=Math.random
 function ring(x,y,col,R){G.FX.push({x,y,ring:1,R,life:.45,max:.45,col});}
 function ftxt(x,y,t,col,big){G.FX.push({x,y,vx:rnd(-15,15),vy:-60,life:big?1.1:.8,max:big?1.1:.8,txt:t,col,big});}
 function splat(x,y,col,r){G.DEC.push({x,y,r:r||rnd(10,20),col,a:Math.random()*6,n:2+(Math.random()*3|0),t:0});if(G.DEC.length>200)G.DEC.shift();}
-function hurtP(d,force){const P=G.P;if(!force&&(P.inv>0||P.dash>0))return;d*=DIFF[S.diff].ed;if(G.shield>0&&!force){G.shield--;P.inv=.5;ring(P.x,P.y-30,"#7ff3ea",40);sfx.hit();hudForce=true;return;}
+function hurtP(d,force,src){const P=G.P;if(!force&&(P.inv>0||P.dash>0))return;if(src){G.hitDir=Math.atan2(src.y-P.y,src.x-P.x);G.hitDirT=.9;}d*=DIFF[S.diff].ed;if(G.shield>0&&!force){G.shield--;P.inv=.5;ring(P.x,P.y-30,"#7ff3ea",40);sfx.hit();hudForce=true;return;}
  P.hp-=d;P.inv=.45;G.shake=Math.max(G.shake,.25);G.hurtA=.5;sfx.hurt();hudForce=true;fx(P.x,P.y-40,"#ff3b5c",6,120);if(P.hp<=0)playerDead();}
 function hurtE(e,d,ang,kb){if(e.dead||e.kneel)return;e.hp-=d;e.flash=.1;if(kb){e.kx+=Math.cos(ang)*kb;e.ky+=Math.sin(ang)*kb;}sfx.hit();if(d>=12)ftxt(e.x+rnd(-8,8),e.y-(ET[e.type].s||.36)*240,Math.round(d),"#fff");
  if(e.hp<=0){if(ET[e.type].elite){e.kneel=true;e.kneelT=8;e.hp=1;toast("☠️ La brute est à genoux ! Approche-toi pour l'achever");}else killE(e);}}
 const ECOL={zombie:"#7fbf4a",diablotin:"#ff5a1f",esprit:"#c8a0ff",cracheur:"#c8e44a",brute:"#7fbf4a"};
-function killE(e,silent){e.dead=true;G.g.kills++;G.g.score+=ET[e.type].sc;G.energy=Math.min(100,G.energy+(ET[e.type].elite?20:2.5));sfx.die();
+function killE(e,silent){e.dead=true;G.g.kills++;if(!silent){G.combo=G.time-(G.lastKill||-9)<2.6?(G.combo||0)+1:1;G.lastKill=G.time;if(G.combo>=5&&G.combo%5===0){const b=G.combo*10;G.g.score+=b;G.energy=Math.min(100,G.energy+6);ftxt(G.P.x,G.P.y-120,`COMBO ×${G.combo} ! +${b}`,"#ffb020",1);sfx.sel();}}G.g.score+=ET[e.type].sc;G.energy=Math.min(100,G.energy+(ET[e.type].elite?20:2.5));sfx.die();
  const col=ECOL[e.type];fx(e.x,e.y-30,col,14,170,.6,4);splat(e.x+rnd(-8,8),e.y+rnd(-4,6),col);
  if(e.type!=="esprit")G.COR.push({sk:e.sk,x:e.x,y:e.y,s:ET[e.type].s,bw:ET[e.type].bw,flip:e.flip||1,t:0});
  if(!silent){const r=Math.random();if(r<.05)G.PK.push({kind:"potion",x:e.x,y:e.y,tmp:20});else if(r<.13&&G.slots.some(id=>id&&WEAP[id].ammo))G.PK.push({kind:"ammo",x:e.x,y:e.y,tmp:20});}}
@@ -1327,7 +1438,7 @@ function fire(){const P=G.P,id=G.slots[G.cur],w=WEAP[id];if(!w||P.cd>0)return;
  if(w.gren){G.B.push({x:m.x,y:gy,h,vh:120,vx:Math.cos(P.ang)*w.spd,vy:Math.sin(P.ang)*w.spd,dmg:w.dmg,life:.85,r:7,own:"p",kind:"gren"});P.muzzle=.08;return;}
  for(let i=0;i<w.pel;i++){const a=P.ang+rnd(-w.spr/2,w.spr/2),v=w.spd*rnd(.9,1.05);G.B.push({x:m.x,y:gy,h,vx:Math.cos(a)*v,vy:Math.sin(a)*v,dmg:w.dmg,life:w.range/v,r:4,own:"p",kind:"bul",kb:w.kb||30});}
  G.FX.push({x:m.x,y:m.y+h,vx:-Math.cos(P.ang)*60+rnd(-40,40),vy:rnd(-30,30),life:.6,max:.6,r:2,col:"#e8c060",shell:1,h:h,vh:rnd(60,120)});
- P.muzzle=.06;G.shake=Math.max(G.shake,id==="shotgun"?.14:.03);}
+ P.muzzle=.06;G.shake=Math.max(G.shake,id==="shotgun"?.14:.03);G.kick={x:-Math.cos(P.ang)*(id==="shotgun"?10:3),y:-Math.sin(P.ang)*(id==="shotgun"?10:3)};}
 function explode(x,y,R,dmg){sfx.boom();G.shake=Math.max(G.shake,.45);ring(x,y,"#ffb020",R);fx(x,y-10,"#ff7a1f",34,320,.7,7,{glow:1});fx(x,y-10,"#ffe37a",18,220,.4,5,{glow:1});fx(x,y-10,"#555",14,120,1,10);splat(x,y,"#1a1410",R*.4);
  G.FX.push({x,y,light:R*2.2,life:.35,max:.35,col:"#ffb020"});
  for(const e of G.E){if(e.dead)continue;const d=dd({x,y},e);if(d<R+e.r)hurtE(e,dmg*(1-d/(R*1.6)),Math.atan2(e.y-y,e.x-x),260);}
@@ -1343,7 +1454,7 @@ function freeTileFar(min,max,avoidView){const P=G.P;for(let k=0;k<40;k++){const 
   const i=(y/TS|0)*GW+(x/TS|0);if(BLKD[i]||FD[i]>=1e9)continue;if(hyp(x-REFUGE.x,y-REFUGE.y)<REFUGE.r+80)continue;if(LAIRS.some((L,j)=>inRect({x,y},L.room)&&G.fight!==j))continue;
   if(avoidView&&Math.abs(x-G.cam.x)<VW/Z/2+60&&Math.abs(y-G.cam.y)<VH/Z/2+120)continue;return{x,y};}return null;}
 function spawnNear(type,cx,cy,rad){for(let k=0;k<20;k++){const a=Math.random()*7,d=rnd(rad*.5,rad),x=cx+Math.cos(a)*d,y=cy+Math.sin(a)*d;const i=(y/TS|0)*GW+(x/TS|0);if(x<40||y<40||x>WW-40||y>WH-40||BLKD[i])continue;if(hyp(x-REFUGE.x,y-REFUGE.y)<REFUGE.r+40)continue;const e=mkEnemy(type,x,y,true);G.E.push(e);fx(x,y,"#5a4a3a",10,90,.6,4);return e;}return null;}
-function director(dt){if(G.fight>=0)return;G.spawnT-=dt;const alive=G.E.length;const target=Math.min(LOWQ?46:64,(16+7*G.bosses+1.2*G.rescued.length)*DIFF[S.diff].cnt);
+function director(dt){if(G.fight>=0)return;G.spawnT-=dt;const alive=G.E.length;const target=Math.min(LOWQ?46:64,(16+7*G.bosses+1.2*G.rescued.length)*DIFF[S.diff].cnt*Math.min(1,.4+(G.sess||0)/240));
  if(G.spawnT<=0){G.spawnT=.45;if(alive<target){const n=Math.min(3,Math.ceil(target-alive));for(let i=0;i<n;i++){const p=freeTileFar(640,1150,true);if(p)G.E.push(mkEnemy(spawnType(),p.x,p.y));}}}
  if(G.rescued.length>=1){G.hordeT-=dt;if(G.hordeT<=0){G.hordeT=rnd(70,100);const n=Math.round((12+5*G.bosses)*DIFF[S.diff].cnt),a=Math.random()*7;let c=0;
    for(let i=0;i<n*3&&c<n;i++){const d=rnd(700,950),aa=a+rnd(-.5,.5),x=G.P.x+Math.cos(aa)*d,y=G.P.y+Math.sin(aa)*d;const ix=(y/TS|0)*GW+(x/TS|0);if(x<40||y<40||x>WW-40||y>WH-40||BLKD[ix]||FD[ix]>=1e9)continue;if(LAIRS.some(L=>inRect({x,y},L.room)))continue;G.E.push(mkEnemy(Math.random()<.75?"zombie":"diablotin",x,y));c++;}
@@ -1457,7 +1568,10 @@ function update(dt){const P=G.P;G.time+=dt;
  P.dashCd-=dt;const ox=P.x,oy=P.y;
  if(P.dash>0){P.dash-=dt;P.x+=P.dvx*dt;P.y+=P.dvy*dt;if(Math.random()<.5)fx(P.x,P.y-5,"#8a8a9a66",1,20,.35,6);}
  else{const sp=235,ac=Math.min(1,dt*14);P.vx+=(mx*sp-P.vx)*ac;P.vy+=(my*sp-P.vy)*ac;P.x+=P.vx*dt;P.y+=P.vy*dt;}
- pushOut(P,P.r);const moved=hyp(P.x-ox,P.y-oy);P.ph+=moved/95;P.mv=moved/dt>30;
+ pushOut(P,P.r);const moved=hyp(P.x-ox,P.y-oy);P.ph+=moved/95;P.mv=moved/dt>30;G.sess=(G.sess||0)+dt;
+ if(P.mv){P.stepT=(P.stepT||0)-dt;if(P.stepT<=0){P.stepT=.3;if(G.inside)fx(P.x+rnd(-6,6),P.y,"#8a7a6a55",3,40,.45,4);else{G.FX.push({x:P.x+rnd(-8,8),y:P.y+2,ring:1,R:16,life:.35,max:.35,col:"#9ab4ff88"});fx(P.x,P.y,"#9ab4ff66",3,50,.3,2);}}}
+ if(P.hp<30){G.hbT=(G.hbT||0)-dt;if(G.hbT<=0){G.hbT=.85;tone(55,.12,"sine",.25);tone(50,.12,"sine",.2,null,.16);}}
+ if(G.hitDirT>0)G.hitDirT-=dt;if(G.kick){G.kick.x*=.8;G.kick.y*=.8;}
  P.inv=Math.max(0,P.inv-dt);P.cd-=dt;P.swing=Math.max(0,P.swing-dt);P.muzzle=Math.max(0,P.muzzle-dt);
  if(wantFire)fire();
  if(hyp(P.x-REFUGE.x,P.y-REFUGE.y)<REFUGE.r){if(P.hp<100){P.hp=Math.min(100,P.hp+10*dt);hudForce=true;if(Math.random()<.25)fx(P.x+rnd(-15,15),P.y-30,"#2ee59d",1,30,.7,3,{glow:1});}}
@@ -1472,10 +1586,15 @@ function update(dt){const P=G.P;G.time+=dt;
   if(T.ranged&&d<380&&d>120&&los(e.x,e.y-20,P.x,P.y-20)){vx*=.1;vy*=.1;e.spitT-=dt;if(e.spitT<=0){e.spitT=rnd(1.8,2.8);e.spit=.3;eShoot(e.x,e.y,42,Math.atan2(P.y-e.y,P.x-e.x),330,T.dmg,"spit",7);}}
   e.spit=Math.max(0,e.spit-dt);
   const kx=(e.x/HC)|0,ky=(e.y/HC)|0;for(let oy2=-1;oy2<=1;oy2++)for(let ox2=-1;ox2<=1;ox2++){const a=hash.get(kx+ox2+(ky+oy2)*1000);if(!a)continue;for(const o of a){if(o===e)continue;const sx=e.x-o.x,sy=e.y-o.y,s2=sx*sx+sy*sy,rr2=(e.r+o.r)*(e.r+o.r);if(s2<rr2&&s2>.01){const s=Math.sqrt(s2),f=(e.r+o.r-s)/(e.r+o.r);vx+=sx/s*f*1.6;vy+=sy/s*f*1.6;}}}
-  const ex=e.x,ey=e.y;e.x+=(vx*e.spd+e.kx)*dt;e.y+=(vy*e.spd+e.ky)*dt;e.kx*=Math.pow(.002,dt);e.ky*=Math.pow(.002,dt);
-  if(!T.ghost)pushOut(e,e.r);e.ph+=hyp(e.x-ex,e.y-ey)/(e.type==="diablotin"?70:90);e.flip=dx>=0?1:-1;
+  const slow=e.wind>0||e.chT>0?.15:1;const ex=e.x,ey=e.y;e.x+=(vx*e.spd*slow+e.kx)*dt;e.y+=(vy*e.spd*slow+e.ky)*dt;e.kx*=Math.pow(.002,dt);e.ky*=Math.pow(.002,dt);
+  if(!T.ghost)pushOut(e,e.r);{const mv=hyp(e.x-ex,e.y-ey);e.mv=mv/Math.max(dt,.001)>14;e.ph+=mv/(e.type==="diablotin"?70:90);}e.flip=dx>=0?1:-1;
   const rd=hyp(e.x-REFUGE.x,e.y-REFUGE.y);if(rd<REFUGE.r+20){e.x=REFUGE.x+(e.x-REFUGE.x)/rd*(REFUGE.r+20);e.y=REFUGE.y+(e.y-REFUGE.y)/rd*(REFUGE.r+20);}
-  e.atk-=dt;if(d<e.r+P.r+6&&e.atk<=0){e.atk=.9;e.bite=.25;hurtP(T.dmg);}e.bite=Math.max(0,(e.bite||0)-dt);}
+  if(e.wind>0){e.wind-=dt;if(e.wind<=0){e.bite=.25;e.atk=.8;e.kx+=dx/d*160;e.ky+=dy/d*160;if(d<e.r+P.r+30)hurtP(T.dmg,false,e);}}
+  else{e.atk-=dt;if(d<e.r+P.r+16&&e.atk<=0)e.wind=(e.type==="diablotin"?.24:.4)*(S.diff==="facile"?1.35:S.diff==="expert"?.8:1);}
+  if(e.type==="brute"&&!e.kneel){e.chCd=(e.chCd??rnd(2,4))-dt;if(e.chT>0){e.chT-=dt;if(e.chT<=0){e.dashT=.45;e.dvx=Math.cos(e.chA)*460;e.dvy=Math.sin(e.chA)*460;sfx.roar();}}
+   else if(e.dashT>0){e.dashT-=dt;e.x+=e.dvx*dt;e.y+=e.dvy*dt;pushOut(e,e.r);if(d<e.r+P.r+10&&!e.dHit){e.dHit=1;hurtP(T.dmg,false,e);}}
+   else if(e.chCd<=0&&d>140&&d<340&&los(e.x,e.y-20,P.x,P.y-20)){e.chCd=rnd(4,6);e.chT=.7;e.chA=Math.atan2(dy,dx);e.dHit=0;}}
+  e.bite=Math.max(0,(e.bite||0)-dt);}
  G.E=G.E.filter(e=>!e.dead);
  if(G.boss)bossUpdate(dt);
  for(const b of G.B){b.life-=dt;if(b.life<=0){if(b.kind==="gren")explode(b.x,b.y,WEAP.grenade.radius,b.dmg);b.dead=true;continue;}
@@ -1489,7 +1608,8 @@ function update(dt){const P=G.P;G.time+=dt;
  G.B=G.B.filter(b=>!b.dead);
  for(const f of G.FX){f.life-=dt;if(f.shell){f.vh-=500*dt;f.h=Math.max(0,f.h+f.vh*dt);if(f.h===0){f.vh*=-.3;f.vx*=.6;f.vy*=.6;}f.x+=f.vx*dt;f.y+=f.vy*dt;continue;}if(f.run){f.x+=f.vx*dt/f.max*.25;f.y+=f.vy*dt/f.max*.25;continue;}if(!f.ring&&!f.light){f.x+=(f.vx||0)*dt;f.y+=(f.vy||0)*dt;if(!f.txt){f.vx*=.9;f.vy*=.9;}}}G.FX=G.FX.filter(f=>f.life>0);if(G.FX.length>900)G.FX.splice(0,G.FX.length-900);
  for(const c of G.COR)c.t+=dt;G.COR=G.COR.filter(c=>c.t<(c.boss?3:1.8));
- for(const p of G.PK){if(p.tmp!=null){p.tmp-=dt;if(p.tmp<=0){p.gone=true;continue;}}if(p.resp>0){p.resp-=dt;continue;}if(hyp(P.x-p.x,P.y-p.y)<34){if(p.kind==="potion"&&P.hp>=100&&p.tmp==null)continue;applyPickup(p);if(p.tmp!=null)p.gone=true;else p.resp=100;}}
+ for(const w2 of G.WPK){if(G.slots.includes(null)&&!G.slots.includes(w2.id)&&dd(P,w2)<46){G.WPK=G.WPK.filter(x=>x!==w2);giveWeapon(w2.id);break;}}
+ for(const p of G.PK){if(p.tmp!=null){p.tmp-=dt;if(p.tmp<=0){p.gone=true;continue;}}if(p.resp>0){p.resp-=dt;continue;}{const md=hyp(P.x-p.x,P.y-p.y);if(md<130&&md>8&&!(p.kind==="potion"&&P.hp>=100&&p.tmp==null)){const k=Math.min(1,dt*(6-md/30));p.x+=(P.x-p.x)*k;p.y+=(P.y-p.y)*k;}}if(hyp(P.x-p.x,P.y-p.y)<34){if(p.kind==="potion"&&P.hp>=100&&p.tmp==null)continue;applyPickup(p);if(p.tmp!=null)p.gone=true;else p.resp=100;}}
  G.PK=G.PK.filter(p=>!p.gone);
  G.CR.forEach(k=>{if(k.lock>0)k.lock-=dt;if(k.open){k.resp-=dt;if(k.resp<=0)k.open=false;}});G.CP.forEach(k=>{if(k.lock>0)k.lock-=dt;});
  for(const k of G.CP){if(!k.amb&&dd(P,k)<320){k.amb=true;const n=Math.round((3+G.bosses)*DIFF[S.diff].cnt);for(let i=0;i<n;i++)spawnNear(i===0&&G.rescued.length>=2?"brute":spawnType(),k.x,k.y,300);toast(`🆘 ${k.n} est prisonnier·e ! Les monstres sortent de terre !`);}}
@@ -1499,8 +1619,9 @@ function update(dt){const P=G.P;G.time+=dt;
  let reg=null;for(const r of REGIONS)if(inRect(P,r)){reg=r;break;}const rn=reg?reg.name:"";if(rn!==G.region){G.region=rn;if(reg&&reg.sub&&!G.seen[rn]){G.seen[rn]=1;zoneBanner(reg);}}
  G.inside=BUILD.some(b=>inRect(P,b,-4));BUILD.forEach(b=>{const inside=inRect(P,b,-10);b.ra+=((inside?0:1)-b.ra)*Math.min(1,dt*6);});
  G.shake=Math.max(0,G.shake-dt);G.hurtA=Math.max(0,G.hurtA-dt);G.flash=Math.max(0,G.flash-dt*1.5);G.saveT-=dt;if(G.saveT<=0){G.saveT=20;saveGame();}
+ if(!G.bats)G.bats=[];if(Math.random()<dt*.06&&!G.inside){const y=rnd(.08,.4),n=3+(Math.random()*5|0),dir=Math.random()<.5?1:-1;for(let i=0;i<n;i++)G.bats.push({x:dir>0?-.1-rnd(0,.15):1.1+rnd(0,.15),y:y+rnd(-.05,.05),v:dir*rnd(.12,.2),ph:Math.random()*6,s:rnd(.7,1.2)});}G.bats.forEach(b=>{b.x+=b.v*dt;b.ph+=dt*14;});G.bats=G.bats.filter(b=>b.x>-.3&&b.x<1.3);
  G.lightT-=dt;if(G.lightT<=0){G.lightT=rnd(25,50);G.flash=.55;setTimeout(()=>{if(G)G.flash=.35;},140);sfx.thunder();}
- let tx=P.x+Math.cos(P.ang)*70,ty=P.y-30+Math.sin(P.ang)*50;if(G.boss&&!(G.boss.vanish>0)){tx=P.x+(G.boss.x-P.x)*.4;ty=P.y-30+(G.boss.y-60-P.y)*.4;}G.cam.x+=(tx-G.cam.x)*Math.min(1,dt*5);G.cam.y+=(ty-G.cam.y)*Math.min(1,dt*5);}
+ let tx=P.x+Math.cos(P.ang)*70,ty=P.y-30+Math.sin(P.ang)*50;if(G.boss&&!(G.boss.vanish>0)){tx=P.x+(G.boss.x-P.x)*.4;ty=P.y-30+(G.boss.y-60-P.y)*.4;}if(G.kick){tx+=G.kick.x;ty+=G.kick.y;}G.cam.x+=(tx-G.cam.x)*Math.min(1,dt*5);G.cam.y+=(ty-G.cam.y)*Math.min(1,dt*5);}
 function autoTarget(w){const P=G.P,R=w&&w.melee?280:(w?Math.min(w.range,560):400);const c=[];
  for(const e of G.E){if(e.dead||e.emerge>0)continue;const d=dd(P,e);if(d<R+30)c.push([d,e]);}if(G.boss&&!G.boss.kneel&&G.boss.vanish<=0)c.push([dd(P,G.boss)-40,G.boss]);c.sort((a,b)=>a[0]-b[0]);
  for(let i=0;i<Math.min(6,c.length);i++){const[d,e]=c[i];if(d>R)break;if(e.kneel)continue;if(los(P.x,P.y-20,e.x,e.y-20))return{x:e.x,y:e.y,d,r:e.r,e};}return null;}
@@ -1562,7 +1683,10 @@ function render(dt){const P=G.P,c=ctx;c.setTransform(DPR,0,0,DPR,0,0);c.fillStyl
  // pluie
  if(!G.inside){c.strokeStyle="rgba(170,190,255,.28)";c.lineWidth=1.2;c.beginPath();for(const r of RAIN){r.y+=r.s*dt*1.6;r.x-=r.s*dt*.25;if(r.y>1){r.y-=1;r.x=Math.random()*1.2;}if(r.x<0)r.x+=1.2;const x=r.x*VW,y=r.y*VH;c.moveTo(x,y);c.lineTo(x-5*r.l,y+22*r.l);}c.stroke();
   c.fillStyle="rgba(170,190,255,.25)";for(let i=0;i<6;i++){c.beginPath();c.ellipse(Math.random()*VW,Math.random()*VH,5,2,0,0,7);c.fill();}}
+ if(G.bats)for(const b of G.bats){const x=b.x*VW,y=b.y*VH+Math.sin(b.ph*.3)*8,f=Math.sin(b.ph)*7*b.s,s=b.s;c.fillStyle="#05030a";c.beginPath();c.moveTo(x,y);c.quadraticCurveTo(x-8*s,y-6*s-f,x-16*s,y-2*s-f);c.quadraticCurveTo(x-9*s,y+1,x,y+4*s);c.quadraticCurveTo(x+9*s,y+1,x+16*s,y-2*s-f);c.quadraticCurveTo(x+8*s,y-6*s-f,x,y);c.fill();}
  c.drawImage(VIG,0,0,VW,VH);
+ if(G.hitDirT>0){const a=G.hitDir,cx=VW/2,cy=VH/2,R=Math.min(VW,VH)*.42;c.save();c.globalAlpha=Math.min(1,G.hitDirT*1.4);c.strokeStyle="#ff2a4a";c.lineWidth=10;c.lineCap="round";c.shadowColor="#ff2a4a";c.shadowBlur=18;c.beginPath();c.arc(cx,cy,R,a-.32,a+.32);c.stroke();c.restore();}
+ if(G.combo>=3&&G.time-G.lastKill<2.6){c.save();c.font=`900 ${22+Math.min(18,G.combo)}px ${TITLEF}`;c.textAlign="right";c.lineWidth=5;c.strokeStyle="#000";const tx=`COMBO ×${G.combo}`,x=VW-16,y=VH*.36;c.strokeText(tx,x,y);c.fillStyle=G.combo>=10?"#ff5a3c":"#ffd34d";c.fillText(tx,x,y);c.fillStyle="#ffd34d";c.fillRect(x-120,y+8,120*(1-(G.time-G.lastKill)/2.6),4);c.restore();}
  if(G.hurtA>0){c.fillStyle=`rgba(255,20,50,${G.hurtA*.45})`;c.fillRect(0,0,VW,VH);}
  if(G.P.hp<30){c.fillStyle=`rgba(255,0,40,${.1+Math.sin(G.time*5)*.06})`;c.fillRect(0,0,VW,VH);}
  if(G.flash>0){c.fillStyle=`rgba(220,230,255,${G.flash*.6})`;c.fillRect(0,0,VW,VH);}
@@ -1600,7 +1724,7 @@ function renderLights(){const w=LC.width,h=LC.height,l=lctx,P=G.P,sc=Z/2,t=G.tim
  c.globalAlpha=1;c.restore();}
 function objTarget(){if(G.bosses>=5||G.fight>=0)return null;const i=G.bosses;
  if(unlocked(i)){const L=LAIRS[i];return{x:L.door.x+L.door.w/2,y:L.door.y+L.door.h/2,label:"💀 "+BOSSES[i].name.replace(/^LE |^LA /,"")};}
- let best=null,bd=1e9;for(const k of G.CP){const d=dd(G.P,k);if(d<bd){bd=d;best=k;}}return best?{x:best.x,y:best.y-30,label:"🆘 "+best.n}:null;}
+ let best=null,bd=1e9;for(const k of G.CP){const d=dd(G.P,k);if(d<bd){bd=d;best=k;}}return best?{x:best.x,y:best.y-30,label:"🆘 "+best.n+(best.place?" · "+best.place:"")}:null;}
 /* ----- dessin des personnages ----- */
 function shadow(c,x,y,r){c.fillStyle="rgba(0,0,0,.42)";c.beginPath();c.ellipse(x,y,r,r*.36,0,0,7);c.fill();}
 function drawPlayer(c,P){const R=SPR.p;if(!R)return;const flip=Math.cos(P.ang)>=0?1:-1,la=Math.atan2(Math.sin(P.ang),Math.abs(Math.cos(P.ang))),wid=G.slots[G.cur],w=WEAP[wid];
@@ -1608,7 +1732,7 @@ function drawPlayer(c,P){const R=SPR.p;if(!R)return;const flip=Math.cos(P.ang)>=
  if(G.shield>0){c.strokeStyle="#7ff3ea";c.lineWidth=2.5;c.globalAlpha=.5+Math.sin(G.time*6)*.2;c.beginPath();c.ellipse(P.x,P.y-55,38,66,0,0,7);c.stroke();c.globalAlpha=1;}
  {const g=c.createRadialGradient(P.x,P.y,4,P.x,P.y,34);g.addColorStop(0,S.look.top+"88");g.addColorStop(1,S.look.top+"00");c.fillStyle=g;c.beginPath();c.ellipse(P.x,P.y,34,13,0,0,7);c.fill();}shadow(c,P.x,P.y,20);
  const alpha=P.inv>0&&P.dash<=0&&P.inv<1.5?(Math.sin(G.time*40)>0?.55:1):1;
- const wp=drawRig(c,R,{x:P.x,y:P.y,s:PS,flip,frame:P.mv?Math.floor(P.ph*8):null,arms:{mode:"aim",wpn:wid,la,swing,t:G.time},alpha,flash:0,rot:P.dash>0?flip*.5:0});
+ const wp=drawRig(c,R,{x:P.x,y:P.y,s:PS,flip,frame:P.mv?Math.floor(P.ph*8):null,breath:P.mv?null:G.time,arms:{mode:"aim",wpn:wid,la,swing,t:G.time},alpha,flash:0,rot:P.dash>0?flip*.5:0});
  if(wp){const tip=WTIP[wid]||40,lx=wp.G.x+Math.cos(wp.la)*tip,ly=wp.G.y+Math.sin(wp.la)*tip;P.mz={x:P.x+(lx-102)*PS*flip,y:P.y+(ly-254)*PS};}
  if(P.muzzle>0&&P.mz&&w&&!w.melee&&!w.flame){c.save();c.translate(P.mz.x,P.mz.y);c.rotate(P.ang);c.globalCompositeOperation="lighter";const g=c.createRadialGradient(6,0,0,6,0,22);g.addColorStop(0,"#fff");g.addColorStop(.3,"#ffe37a");g.addColorStop(1,"rgba(255,140,0,0)");c.fillStyle=g;c.beginPath();c.moveTo(0,-7);c.lineTo(28,0);c.lineTo(0,7);c.fill();circ(c,4,0,12);c.restore();}
  if(w&&w.flame&&(mouse.down||stickR||G.tgt)&&P.mz&&P.cd>-0.1){c.save();c.globalCompositeOperation="lighter";c.fillStyle="#4fb3ff";circ(c,P.mz.x,P.mz.y,4);c.restore();}}
@@ -1622,7 +1746,9 @@ function drawEnemy(c,e){const T=ET[e.type],k=e.emerge>0?1-e.emerge/.7:1;
  if(e.emerge>0){c.save();c.beginPath();c.rect(e.x-80,e.y-300,160,302);c.clip();c.translate(0,(1-k)*95*T.s/.36);}
  shadow(c,e.x,e.y,e.r*1.15);
  const dx=G.P.x-e.x,dy=G.P.y-e.y,la=Math.atan2(dy-10,Math.abs(dx));
- drawRig(c,R,{x:e.x,y:e.y,s:T.s,flip:e.flip,bw:T.bw,frame:e.kneel?null:Math.floor(e.ph*8),kneel:e.kneel,arms:e.kneel?{mode:"down"}:{mode:"reach",la:e.bite>0?la+.3:la,t:G.time+e.seed*9},flash:e.flash});
+ if(e.wind>0||e.chT>0){c.fillStyle=`rgba(255,40,60,${.25+Math.sin(G.time*30)*.12})`;c.beginPath();c.ellipse(e.x,e.y,e.r*1.8,e.r*.7,0,0,7);c.fill();}
+ if(e.chT>0){c.strokeStyle="rgba(255,60,80,.55)";c.lineWidth=e.r*1.2;c.lineCap="round";c.beginPath();c.moveTo(e.x,e.y);c.lineTo(e.x+Math.cos(e.chA)*260,e.y+Math.sin(e.chA)*260);c.stroke();c.lineCap="butt";}
+ drawRig(c,R,{x:e.x,y:e.y,s:T.s,flip:e.flip,bw:T.bw,frame:e.kneel||!e.mv?null:Math.floor(e.ph*8),kneel:e.kneel,arms:e.kneel?{mode:"down"}:e.wind>0||e.chT>0?{mode:"claw",t:G.time}:{mode:"reach",la:e.bite>0?la+.3:la,t:G.time+e.seed*9},flash:e.flash,breath:G.time+e.seed*7});
  if(e.emerge>0){c.restore();c.fillStyle="#2a2018";ell(c,e.x,e.y,e.r*1.6,e.r*.5);}
  if(e.kneel){const b=Math.sin(G.time*6)*4;c.font="bold 34px system-ui";c.textAlign="center";c.fillText("❓",e.x,e.y-T.s*250+b);}
  if(T.elite&&!e.kneel&&e.hp<e.max){c.fillStyle="#000a";c.fillRect(e.x-24,e.y-T.s*265,48,6);c.fillStyle="#ff3b5c";c.fillRect(e.x-23,e.y-T.s*265+1,46*e.hp/e.max,4);}}
@@ -1635,7 +1761,7 @@ function drawBoss(c,B){const id=B.def.id,R=SPR["b_"+id],t=G.time;if(!R)return;c.
  else if(id==="drac")arms=B.st==="windup"||B.st==="warn"?{mode:"claw",t}:{mode:"reach",la,t};
  else if(id==="loup")arms=B.st==="charge"?{mode:"claw",t}:{mode:"reach",la,t};
  else arms={mode:"reach",la,t};
- drawRig(c,R,{x:B.x,y:B.y,s:B.def.s,bw:B.def.bw,flip:B.flip,frame:B.mv?Math.floor(B.ph*8):null,kneel:false,arms,flash:B.flash,rot:B.kneel?B.flip*-.25:0});
+ drawRig(c,R,{x:B.x,y:B.y,s:B.def.s,bw:B.def.bw,flip:B.flip,frame:B.mv?Math.floor(B.ph*8):null,breath:B.mv?null:G.time,kneel:false,arms,flash:B.flash,rot:B.kneel?B.flip*-.25:0});
  if(id==="clown"&&arms.mode==="up"){for(let i=0;i<3;i++){const a=t*5+i*2.1;c.fillStyle=["#ff3b8b","#19d3c5","#ffd020"][i];circ(c,B.x+Math.cos(a)*34,B.y-B.def.s*330+Math.sin(a)*18,8);}}
  if(id==="frank"&&Math.random()<.4){c.strokeStyle="#9ffcff";c.lineWidth=2.5;c.beginPath();let x=B.x+rnd(-50,50),y=B.y-rnd(120,190);c.moveTo(x,y);for(let i=0;i<4;i++){x+=rnd(-16,16);y+=rnd(8,20);c.lineTo(x,y);}c.stroke();}
  if(id==="diable"&&Math.random()<.6)fx(B.x+rnd(-30,30),B.y-rnd(0,40),Math.random()<.5?"#ff5a1f":"#ffb020",1,40,.6,4,{glow:1,vy:-60});
@@ -1648,7 +1774,7 @@ function drawCaptive(c,k){const R=SPR[k.sk];if(!R)return;const t=G.time;shadow(c
  c.strokeStyle=`rgba(220,190,255,${p})`;c.lineWidth=2.2;for(let i=0;i<6;i++){c.beginPath();c.ellipse(0,0,34,52,i*.55+t*.5,0,Math.PI);c.stroke();}c.restore();
  const b=Math.sin(t*3+k.x)*3;c.font="900 15px system-ui";c.textAlign="center";c.lineWidth=4;c.strokeStyle="#000";c.strokeText("🆘 "+k.n,k.x,k.y-140+b);c.fillStyle="#fff";c.fillText("🆘 "+k.n,k.x,k.y-140+b);}
 function drawRunner(c,f){const R=SPR[f.sk];if(!R)return;const k=1-f.life/f.max;c.save();c.globalAlpha=Math.min(1,f.life*2);drawRig(c,R,{x:f.x,y:f.y,s:PS,flip:f.vx>=0?1:-1,frame:Math.floor(k*24),arms:{mode:"down",t:G.time}});c.restore();}
-function drawCorpse(c,k){const R=SPR[k.sk];if(!R)return;const fall=Math.min(1,k.t/.35),a=k.t>1?Math.max(0,1-(k.t-1)/(k.boss?2:.8)):1;c.save();c.globalAlpha=a;drawRig(c,R,{x:k.x,y:k.y,s:k.s,bw:k.bw,flip:k.flip,frame:null,arms:{mode:"down"},rot:-k.flip*fall*Math.PI/2*.92});c.restore();}
+function drawCorpse(c,k){const R=SPR[k.sk];if(!R)return;if(k.t>.9&&Math.random()<.35)G.FX.push({x:k.x+rnd(-30,30)*k.s/.47,y:k.y-rnd(0,20),vx:rnd(-10,10),vy:-rnd(30,60),life:.9,max:.9,r:rnd(5,9),col:"#7fbf4a55"});const fall=Math.min(1,k.t/.35),a=k.t>1?Math.max(0,1-(k.t-1)/(k.boss?2:.8)):1;c.save();c.globalAlpha=a;drawRig(c,R,{x:k.x,y:k.y,s:k.s,bw:k.bw,flip:k.flip,frame:null,arms:{mode:"down"},rot:-k.flip*fall*Math.PI/2*.92});c.restore();}
 function drawCrate(c,k){c.save();c.translate(k.x,k.y);shadow(c,0,12,24);const g=c.createLinearGradient(0,-24,0,14);g.addColorStop(0,"#b58a4a");g.addColorStop(1,"#6a4a22");c.fillStyle=g;c.fillRect(-20,-22,40,34);c.fillStyle="#8a6232";c.fillRect(-20,-30,40,10);c.strokeStyle="#3a2410";c.lineWidth=2.5;c.strokeRect(-20,-30,40,42);c.beginPath();c.moveTo(-20,-20);c.lineTo(20,12);c.moveTo(20,-20);c.lineTo(-20,12);c.stroke();
  c.fillStyle="#c9a14a";c.fillRect(-4,-24,8,8);const b=Math.sin(G.time*3+k.x)*3;c.font="bold 20px system-ui";c.textAlign="center";c.fillText(k.lock>0?"🔒":"❓",0,-40+b);c.restore();}
 function drawPickup(c,p){const b=Math.sin(G.time*4+p.x)*3;c.save();c.translate(p.x,p.y);shadow(c,0,4,14);
@@ -1747,7 +1873,9 @@ function renderCreator(){const pv=$("#cPrev");pv.style.setProperty("--pc",S.look
  $("#cOpts").innerHTML=COPT.map(([lbl,key,opts])=>`<div class="crow"><span class="lbl2">${lbl}</span><div class="cvals">${opts.map((o,i)=>{const v=Array.isArray(o)?o[0]:o,on=S.look[key]===v;return Array.isArray(o)?`<button class="pill${on?" on":""}" data-k="${key}" data-i="${i}">${o[1]}</button>`:`<button class="sw${on?" on":""}" data-k="${key}" data-i="${i}" style="background:${o}"></button>`;}).join("")}</div></div>`).join("");
  $("#cOpts").querySelectorAll("button").forEach(b=>b.onclick=()=>{sfx.sel();const o=COPT.find(c=>c[1]===b.dataset.k)[2][+b.dataset.i];S.look[b.dataset.k]=Array.isArray(o)?o[0]:o;store("cz_look2",S.look);renderCreator();});}
 function refreshTitle(){const v=store("cz_save2"),b=$("#resumeBtn");if(v&&v.p){b.style.display="";b.textContent=`▶ CONTINUER · ${v.name} · ${v.p.rescued.length}/12 sauvés · ${v.p.bosses}/5 boss`;}else b.style.display="none";}
-function initTitle(){$("#pname").value=S.name;document.querySelectorAll("#diffP .pill").forEach(b=>{b.classList.toggle("on",b.dataset.v===S.diff);b.onclick=()=>{sfx.sel();S.diff=b.dataset.v;store("cz_diff",S.diff);initTitle();};});$("#diffH").textContent=DIFF[S.diff].lbl;refreshTitle();}
+function initTitle(){$("#pname").value=S.name;document.querySelectorAll("#diffP .pill").forEach(b=>{b.classList.toggle("on",b.dataset.v===S.diff);b.onclick=()=>{sfx.sel();S.diff=b.dataset.v;store("cz_diff",S.diff);initTitle();};});$("#diffH").textContent=DIFF[S.diff].lbl;
+ document.querySelectorAll("#timerP .pill").forEach(b=>{b.classList.toggle("on",b.dataset.v===S.timer);b.onclick=()=>{sfx.sel();S.timer=b.dataset.v;store("cz_timer",S.timer);initTitle();};});$("#timerH").textContent={adapt:"Le temps s'adapte à la longueur de la question (plus long pour lire et calculer).",large:"Beaucoup de temps pour lire et réfléchir.",off:"Pas de limite de temps : on prend le temps qu'il faut."}[S.timer];
+ const tt=$("#ttsP");tt.classList.toggle("on",!!store("cz_tts"));tt.onclick=()=>{store("cz_tts",!store("cz_tts"));initTitle();};refreshTitle();}
 function needName(){const n=$("#pname").value.trim();if(!n){$("#pname").focus();$("#pname").style.borderColor="var(--red)";return false;}S.name=n;store("cz_name",n);return true;}
 $("#goCreate").onclick=()=>{ac();tryFS();if(!needName())return;sfx.sel();show("create");renderCreator();};
 $("#cBack").onclick=()=>{show("title");initTitle();};
@@ -1762,10 +1890,10 @@ let wantFS=store("cz_fs")!==false;
 function inFS(){return !!(document.fullscreenElement||document.webkitFullscreenElement);}
 function tryFS(force){if(!(isTouch()||force)||inFS())return;if(!force&&!wantFS)return;try{const d=document.documentElement,f=d.requestFullscreen||d.webkitRequestFullscreen;if(!f)return;const r=f.call(d,{navigationUI:"hide"});const lock=()=>{try{screen.orientation&&screen.orientation.lock&&screen.orientation.lock("landscape").catch(()=>{});}catch(e){}};if(r&&r.then)r.then(lock).catch(()=>{});else lock();}catch(e){}}
 document.addEventListener("pointerdown",()=>{if(isTouch()&&wantFS&&!inFS()&&($("#game").classList.contains("active")||document.querySelector("#create.active,#subj.active,#title.active")))tryFS();},true);
-$("#startBtn").onclick=async()=>{if(!S.sel.size)return;ac();tryFS();S.mode="game";qBag=[];posBag=[];store("cz_save2",null);G=null;await prepare();startGame(freshPersist());saveGame();await showHelp();toast("🔎 Trouve des armes : une machette à la cantine, un pistolet au collège !");};
-$("#resumeBtn").onclick=async()=>{const v=store("cz_save2");if(!v)return;ac();tryFS();S.name=v.name;S.diff=v.diff;S.sel=new Set(v.sel);if(v.look)S.look=v.look;S.mode="game";qBag=[];posBag=[];G=null;await prepare();
+$("#startBtn").onclick=async()=>{if(!S.sel.size)return;ac();tryFS();S.mode="game";QH=null;recent=[];posBag=[];store("cz_save2",null);G=null;await prepare();startGame(freshPersist());saveGame();await showHelp();toast("🔎 Trouve des armes : une machette à la cantine, un pistolet au collège !");};
+$("#resumeBtn").onclick=async()=>{const v=store("cz_save2");if(!v)return;ac();tryFS();S.name=v.name;S.diff=v.diff;S.sel=new Set(v.sel);if(v.look)S.look=v.look;S.mode="game";QH=null;recent=[];posBag=[];G=null;await prepare();
  const p=Object.assign(freshPersist(),v.p);startGame(p);toast(`💾 Partie reprise : ${p.rescued.length}/12 camarades sauvés`);};
-$("#revBtn").onclick=async()=>{if(!S.sel.size)return;ac();G=null;S.mode="rev";S.rev=null;S.revJ=2;qBag=[];posBag=[];$("#qQuit").style.display="";S.quitRev=false;
+$("#revBtn").onclick=async()=>{if(!S.sel.size)return;ac();G=null;S.mode="rev";S.rev=null;S.revJ=2;QH=null;recent=[];posBag=[];$("#qQuit").style.display="";S.quitRev=false;
  for(let i=0;i<12&&!S.quitRev;i++)await askQ(`📚 SALLE DE RÉVISION — question ${i+1} / 12`,"sup","Bonne réponse !","Ce n'est pas ça…");$("#qQuit").style.display="none";endGame(false);};
 $("#qQuit").onclick=()=>{S.quitRev=true;if(QS.cont)QS.cont();else if(QS.abort)QS.abort();};
 function showHelp(){return new Promise(r=>{if(G)G.paused++;$("#help").classList.add("show");$("#helpGo").onclick=()=>{$("#help").classList.remove("show");if(G)G.paused=Math.max(0,G.paused-1);sfx.sel();r();};});}
@@ -1781,7 +1909,9 @@ $("#fsBtn").onclick=()=>{try{if(inFS()){wantFS=false;store("cz_fs",false);(docum
 function endGame(won){const g=gstats(),wasGame=S.mode==="game"&&G;const acc=g.total?Math.round(g.correct/g.total*100):0;const d=new Date();
  if(g.total>0){const lb=store("cz_lb")||[];S.me={n:S.name||"?",s:g.score,a:acc,f:S.mode==="rev"?"Révision":`${wasGame?G.rescued.length:0}/12 sauvés · ${wasGame?G.bosses:0}/5 boss`,d:d.toLocaleDateString("fr-FR"),id:Date.now()};lb.push(S.me);lb.sort((a,b)=>b.s-a.s);store("cz_lb",lb.slice(0,30));}
  renderBilan(g,won);if(wasGame&&!won)saveGame();G=null;show("bilan");}
-function renderBilan(g,won){const d=new Date();$("#bName").textContent=S.name||"";
+function renderProg(){if(!QH)qhLoad();const ids=[...S.sel].filter(id=>ALLCH[id]);if(!ids.length){$("#bProg").innerHTML="";return;}
+ $("#bProg").innerHTML=`<h3 style="margin:10px 0 8px">📈 Progression par notion</h3><table class="lb"><tr><th>Notion</th><th>Niveau</th><th>Réussite (10 dernières)</th><th>Questions</th></tr>`+ids.map(id=>{const c=ALLCH[id],s=chS(id),m=s.h.length?Math.round(mastery(id)*100):null;return`<tr><td>${c.sub.icon} ${esc(c.name)}</td><td style="color:#ffd34d;white-space:nowrap">${stars(s.lvl)}</td><td>${m==null?"—":`<div style="display:flex;align-items:center;gap:6px"><div style="flex:1;height:8px;border-radius:5px;background:#ffffff1a;min-width:60px"><div style="height:100%;width:${m}%;border-radius:5px;background:${m>=70?"#2ee59d":m>=40?"#ffb020":"#ff3b5c"}"></div></div>${m} %</div>`}</td><td>${s.n}</td></tr>`;}).join("")+"</table>";}
+function renderBilan(g,won){const d=new Date();$("#bName").textContent=S.name||"";renderProg();
  if(g){const acc=g.total?Math.round(g.correct/g.total*100):0;const sn=[...new Set([...S.sel].map(id=>ALLCH[id]).filter(Boolean).map(c=>c.sub.name))].join(", ");
   $("#bInfo").textContent=`${d.toLocaleDateString("fr-FR")} à ${d.toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"})} · ${S.mode==="rev"?"Salle de révision":won?"Partie gagnée !":"Mode aventure"} · ${sn}`;
   $("#bKpis").innerHTML=`<div class="kpi"><b>${g.score.toLocaleString("fr-FR")}</b><span>Score</span></div><div class="kpi"><b>${g.correct}/${g.total}</b><span>Bonnes réponses</span></div><div class="kpi"><b>${acc} %</b><span>Réussite</span></div><div class="kpi"><b>${g.kills||0}</b><span>Monstres éliminés</span></div>`;
@@ -1793,6 +1923,8 @@ $("#replayBtn").onclick=()=>{show("title");initTitle();};
 let framed=false;try{framed=window.self!==window.top;}catch(e){framed=true;}
 $("#printBtn").onclick=()=>{try{window.print();}catch(e){}};if(framed)$("#printBtn").style.display="none";
 initTitle();resize();
+
+document.addEventListener("visibilitychange",()=>{if(document.hidden&&G&&$("#game").classList.contains("active")&&!QS.open&&!G.dead&&!$("#pause").classList.contains("show"))togglePause();});
 
 </script>
 </body>
