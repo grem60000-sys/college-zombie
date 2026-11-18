@@ -6,13 +6,18 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#07070f">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="manifest.webmanifest">
 <title>Collège Zombie — Opération Sauvetage</title>
 <style>
 :root{--title:"Arial Black","Impact","Haettenschweiler",system-ui,sans-serif;--bg:#07070f;--panel:#11121f;--line:#2a2d48;--teal:#19d3c5;--amber:#ffb020;--red:#ff3b5c;--green:#2ee59d;--violet:#a46bff;--txt:#eef0ff;--mut:#9aa0c3}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none}
-html,body{height:100%;background:var(--bg);color:var(--txt);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;overflow:hidden;overscroll-behavior:none;user-select:none;-webkit-user-select:none}
+html,body{min-height:100%;background:var(--bg);color:var(--txt);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;user-select:none;-webkit-user-select:none}
+body{overflow-x:hidden;overflow-y:auto;touch-action:pan-y}
+body.ingame{overflow:hidden;touch-action:none;overscroll-behavior:none;position:fixed;inset:0}
 button{font:inherit;color:inherit;cursor:pointer;border:0;background:none;touch-action:manipulation}
-.screen{position:fixed;inset:0;display:none;overflow:auto;-webkit-overflow-scrolling:touch}
+.screen{position:relative;z-index:1;min-height:100vh;display:none}
+#game{position:fixed;inset:0;z-index:1}
 .screen.active{display:block}
 /* ===== fond nocturne (titre, menus) ===== */
 .night{background:transparent}
@@ -25,7 +30,7 @@ button{font:inherit;color:inherit;cursor:pointer;border:0;background:none;touch-
 @keyframes rain{to{background-position:-14px 80px}}
 .fog{position:absolute;left:-20%;right:-20%;bottom:0;height:30vh;background:radial-gradient(ellipse at 30% 100%,rgba(140,255,120,.12),transparent 60%),radial-gradient(ellipse at 75% 100%,rgba(180,120,255,.12),transparent 60%);animation:fog 14s ease-in-out infinite alternate}
 @keyframes fog{to{transform:translateX(6%)}}
-.wrap{position:relative;z-index:2;min-height:100%;display:flex;flex-direction:column;align-items:center;padding:clamp(10px,3vh,30px) 12px 30px;gap:clamp(8px,2vh,16px)}
+.wrap{position:relative;z-index:2;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:clamp(10px,3vh,30px) 12px 30px;gap:clamp(8px,2vh,16px)}
 .logo{font-family:var(--title);font-style:italic;font-size:clamp(38px,9vw,96px);line-height:.95;text-align:center;letter-spacing:2px;background:linear-gradient(180deg,#f4ffd0 0%,#b6ff4d 40%,#3fae2a 75%,#1b5e20 100%);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 6px 0 #0c2a0c) drop-shadow(0 0 24px rgba(120,255,60,.5));margin-top:2vh}
 .logo.sm{font-size:clamp(26px,5.5vw,52px);margin-top:0}
 .sub{font-family:var(--title);font-style:italic;letter-spacing:clamp(3px,1vw,8px);color:#ff3b5c;text-shadow:0 0 14px #ff3b5c99;font-size:clamp(13px,2.4vw,22px);text-align:center}
@@ -142,7 +147,7 @@ body.touch #wslots,body.touch .pcOnly{display:none!important}
 #tAuto{position:absolute;left:50%;bottom:10px;transform:translateX(-50%);font-size:11px;font-weight:900;background:#000a;border:1px solid #ffffff33;border-radius:10px;padding:5px 9px;pointer-events:auto;z-index:5}
 body.touch #mini{left:calc(8px + env(safe-area-inset-left));right:auto;bottom:auto;top:76px;width:120px;height:90px}
 body.touch #mini.big{left:50%;right:auto;top:50%;bottom:auto;transform:translate(-50%,-50%);width:min(560px,92vw);height:auto}
-@media (max-height:520px){.portrait{width:44px;height:44px}#obj{font-size:11px;max-width:36vw;padding:4px 8px}.chip{font-size:11px;padding:3px 7px}.ib{width:36px;height:36px;font-size:15px}#bossBar{top:46px}body.touch #mini{top:60px;width:100px;height:75px}#zone .t{font-size:clamp(26px,6vw,44px)}#zone{top:9%}.cprev{min-height:0}.cprev svg{height:55vh}.crow{padding:3px 0}.sw{width:30px;height:30px}.pill{min-height:36px;padding:6px 11px;font-size:13px}.logo{margin-top:0}}
+@media (max-height:520px){#title .tag{display:none}#title .logo{font-size:44px}.sub{font-size:13px}.tcard{gap:8px}.card{padding:10px 14px}input.txt{padding:8px 12px;margin-top:3px}.wrap{gap:6px;padding-top:6px}.bigbtn{padding:10px 22px;min-height:46px}.btn2{min-height:40px;padding:8px 12px}.scard{min-height:76px;padding:8px}.scard .ic{font-size:26px}.sgrid{grid-template-columns:repeat(auto-fill,minmax(110px,1fr))}.portrait{width:44px;height:44px}#obj{font-size:11px;max-width:36vw;padding:4px 8px}.chip{font-size:11px;padding:3px 7px}.ib{width:36px;height:36px;font-size:15px}#bossBar{top:46px}body.touch #mini{top:60px;width:100px;height:75px}#zone .t{font-size:clamp(26px,6vw,44px)}#zone{top:9%}.cprev{min-height:0}.cprev svg{height:55vh}.crow{padding:3px 0}.sw{width:30px;height:30px}.pill{min-height:36px;padding:6px 11px;font-size:13px}.logo{margin-top:0}}
 #rotate{position:fixed;inset:0;z-index:80;background:#07070ff2;display:none;flex-direction:column;align-items:center;justify-content:center;gap:16px;text-align:center;padding:30px}
 #rotate .ph{font-size:70px;animation:rot 1.6s ease-in-out infinite}
 @keyframes rot{0%,30%{transform:rotate(0)}60%,100%{transform:rotate(-90deg)}}
@@ -1721,7 +1726,7 @@ document.addEventListener("touchmove",e=>{if($("#game").classList.contains("acti
 document.addEventListener("gesturestart",e=>e.preventDefault());
 
 /* ================= MENUS ================= */
-function show(id){document.querySelectorAll(".screen").forEach(e=>e.classList.toggle("active",e.id===id));$("#skyBg").style.display=id==="game"?"none":"block";checkRotate();}
+function show(id){document.querySelectorAll(".screen").forEach(e=>e.classList.toggle("active",e.id===id));document.body.classList.toggle("ingame",id==="game");if(id!=="game")window.scrollTo(0,0);$("#skyBg").style.display=id==="game"?"none":"block";checkRotate();}
 (function skyline(){const r=seeded(9);let s="",x=-20;while(x<1220){const w=70+r()*120,h=70+r()*150;s+=`<rect x="${x}" y="${300-h}" width="${w}" height="${h}" fill="#0d0a18"/>`;if(r()>.5)s+=`<polygon points="${x},${300-h} ${x+w/2},${300-h-26} ${x+w},${300-h}" fill="#0d0a18"/>`;
  for(let wy=300-h+14;wy<292;wy+=20)for(let wx=x+10;wx<x+w-12;wx+=18)if(r()>.6)s+=`<rect x="${wx}" y="${wy}" width="9" height="11" fill="${r()>.7?"#b6ff4d":"#ffd98a"}" opacity="${(.3+r()*.6).toFixed(2)}"/>`;x+=w+6+r()*16;}
  let tr="";for(let i=0;i<14;i++){const tx=r()*1200,th=40+r()*50;tr+=`<path d="M${tx} 300 L${tx} ${300-th*.4} M${tx-14} ${300-th*.6} Q${tx} ${300-th*1.3} ${tx+14} ${300-th*.6}Z" stroke="#06040c" stroke-width="5" fill="#06040c"/>`;}
@@ -1744,7 +1749,7 @@ function renderCreator(){const pv=$("#cPrev");pv.style.setProperty("--pc",S.look
 function refreshTitle(){const v=store("cz_save2"),b=$("#resumeBtn");if(v&&v.p){b.style.display="";b.textContent=`▶ CONTINUER · ${v.name} · ${v.p.rescued.length}/12 sauvés · ${v.p.bosses}/5 boss`;}else b.style.display="none";}
 function initTitle(){$("#pname").value=S.name;document.querySelectorAll("#diffP .pill").forEach(b=>{b.classList.toggle("on",b.dataset.v===S.diff);b.onclick=()=>{sfx.sel();S.diff=b.dataset.v;store("cz_diff",S.diff);initTitle();};});$("#diffH").textContent=DIFF[S.diff].lbl;refreshTitle();}
 function needName(){const n=$("#pname").value.trim();if(!n){$("#pname").focus();$("#pname").style.borderColor="var(--red)";return false;}S.name=n;store("cz_name",n);return true;}
-$("#goCreate").onclick=()=>{ac();if(!needName())return;sfx.sel();show("create");renderCreator();};
+$("#goCreate").onclick=()=>{ac();tryFS();if(!needName())return;sfx.sel();show("create");renderCreator();};
 $("#cBack").onclick=()=>{show("title");initTitle();};
 $("#cRand").onclick=()=>{sfx.sel();COPT.forEach(([l,key,opts])=>{const o=opts[Math.random()*opts.length|0];S.look[key]=Array.isArray(o)?o[0]:o;});store("cz_look2",S.look);renderCreator();};
 $("#cGo").onclick=()=>{sfx.sel();show("subj");renderSubj();};
@@ -1753,7 +1758,10 @@ async function prepare(){show("loading");LOWQ=isTouch()&&Math.max(innerWidth,inn
  delete SPR.p;const t0=performance.now();await loadSprites(p=>{$("#lbar").style.width=Math.round(p*100)+"%";$("#ltxt").textContent=["Les zombies se lèvent…","Le Clown se maquille…","Frankenstein se recharge…","Dracula sort de son cercueil…","Le Loup-Garou attend la pleine lune…","Le Diable allume la chaudière…"][Math.min(5,p*6|0)];});
  for(const k in SPR){const R=SPR[k];R.eye=eyeOf(R,R.idleP);}
  getChunk(Math.floor(REFUGE.x/CH),Math.floor(REFUGE.y/CH));}
-function tryFS(){if(isTouch()){try{const d=document.documentElement;(d.requestFullscreen||d.webkitRequestFullscreen).call(d).catch(()=>{});}catch(e){}}}
+let wantFS=store("cz_fs")!==false;
+function inFS(){return !!(document.fullscreenElement||document.webkitFullscreenElement);}
+function tryFS(force){if(!(isTouch()||force)||inFS())return;if(!force&&!wantFS)return;try{const d=document.documentElement,f=d.requestFullscreen||d.webkitRequestFullscreen;if(!f)return;const r=f.call(d,{navigationUI:"hide"});const lock=()=>{try{screen.orientation&&screen.orientation.lock&&screen.orientation.lock("landscape").catch(()=>{});}catch(e){}};if(r&&r.then)r.then(lock).catch(()=>{});else lock();}catch(e){}}
+document.addEventListener("pointerdown",()=>{if(isTouch()&&wantFS&&!inFS()&&($("#game").classList.contains("active")||document.querySelector("#create.active,#subj.active,#title.active")))tryFS();},true);
 $("#startBtn").onclick=async()=>{if(!S.sel.size)return;ac();tryFS();S.mode="game";qBag=[];posBag=[];store("cz_save2",null);G=null;await prepare();startGame(freshPersist());saveGame();await showHelp();toast("🔎 Trouve des armes : une machette à la cantine, un pistolet au collège !");};
 $("#resumeBtn").onclick=async()=>{const v=store("cz_save2");if(!v)return;ac();tryFS();S.name=v.name;S.diff=v.diff;S.sel=new Set(v.sel);if(v.look)S.look=v.look;S.mode="game";qBag=[];posBag=[];G=null;await prepare();
  const p=Object.assign(freshPersist(),v.p);startGame(p);toast(`💾 Partie reprise : ${p.rescued.length}/12 camarades sauvés`);};
@@ -1769,7 +1777,7 @@ $("#pHelp").onclick=()=>{$("#help").classList.add("show");$("#helpGo").onclick=(
 $("#pBilan").onclick=()=>{$("#pause").classList.remove("show");saveGame();endGame(false);};
 $("#pQuit").onclick=()=>{$("#pause").classList.remove("show");saveGame();G=null;show("title");initTitle();};
 $("#muteBtn").textContent=muted?"🔇":"🔊";$("#muteBtn").onclick=()=>{muted=!muted;store("cz_mute",muted);$("#muteBtn").textContent=muted?"🔇":"🔊";};
-$("#fsBtn").onclick=()=>{try{if(document.fullscreenElement)document.exitFullscreen();else{const d=document.documentElement;(d.requestFullscreen||d.webkitRequestFullscreen).call(d);}}catch(e){toast("Plein écran indisponible ici");}};
+$("#fsBtn").onclick=()=>{try{if(inFS()){wantFS=false;store("cz_fs",false);(document.exitFullscreen||document.webkitExitFullscreen).call(document);}else{wantFS=true;store("cz_fs",true);tryFS(true);setTimeout(()=>{if(!inFS())toast("Plein écran indisponible sur cet appareil : ajoute le jeu à l'écran d'accueil");},600);}}catch(e){toast("Plein écran indisponible ici");}};
 function endGame(won){const g=gstats(),wasGame=S.mode==="game"&&G;const acc=g.total?Math.round(g.correct/g.total*100):0;const d=new Date();
  if(g.total>0){const lb=store("cz_lb")||[];S.me={n:S.name||"?",s:g.score,a:acc,f:S.mode==="rev"?"Révision":`${wasGame?G.rescued.length:0}/12 sauvés · ${wasGame?G.bosses:0}/5 boss`,d:d.toLocaleDateString("fr-FR"),id:Date.now()};lb.push(S.me);lb.sort((a,b)=>b.s-a.s);store("cz_lb",lb.slice(0,30));}
  renderBilan(g,won);if(wasGame&&!won)saveGame();G=null;show("bilan");}
